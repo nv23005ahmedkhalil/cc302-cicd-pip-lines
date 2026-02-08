@@ -1,9 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
 import json
 import os
 from datetime import datetime
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Local file-based storage (JSON)
 TASKS_FILE = "tasks.json"
@@ -17,6 +19,24 @@ def load_tasks():
 def save_tasks(tasks):
     with open(TASKS_FILE, "w") as f:
         json.dump(tasks, f, indent=4)
+
+@app.route("/", methods=["GET"])
+def index():
+    return render_template("index.html")
+
+@app.route("/api", methods=["GET"])
+def welcome():
+    return jsonify({
+        "message": "Welcome to To-Do App API",
+        "version": "1.0.0",
+        "endpoints": {
+            "get_all_tasks": "GET /tasks",
+            "get_task": "GET /tasks/<task_id>",
+            "create_task": "POST /tasks",
+            "update_task": "PUT /tasks/<task_id>",
+            "delete_task": "DELETE /tasks/<task_id>"
+        }
+    })
 
 @app.route("/tasks", methods=["GET"])
 def get_tasks():
@@ -76,4 +96,4 @@ def delete_task(task_id):
     return jsonify({"message": "Task deleted"}), 200
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)

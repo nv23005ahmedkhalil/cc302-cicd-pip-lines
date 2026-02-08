@@ -1,1 +1,16 @@
-[]
+[
+    {
+        "id": 1,
+        "title": "TODO",
+        "description": "Ahmed Khalil 23005",
+        "completed": true,
+        "created_at": "2026-02-08T08:09:14.367277"
+    },
+    {
+        "id": 2,
+        "title": "demo v2",
+        "description": "test",
+        "completed": true,
+        "created_at": "2026-02-08T08:18:32.374042"
+    }
+]

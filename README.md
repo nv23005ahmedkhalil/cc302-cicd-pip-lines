@@ -1,4 +1,4 @@
-# To-Do App
+# To-Do App v1.0
 
 A simple Flask-based To-Do application that allows users to create, read, update, and delete tasks. The application is containerized using Docker and uses a local JSON file for storing tasks.
 
@@ -9,6 +9,9 @@ A simple Flask-based To-Do application that allows users to create, read, update
 - **Containerized**: Fully containerized using Docker and Docker Compose
 - **RESTful API**: Easy-to-use REST API for managing tasks
 - **Development Ready**: Includes hot-reload for development
+- **Interactive Dashboard**: Real-time statistics with visual charts
+- **Task Statistics**: Progress bar and task distribution graph
+- **Wave Animation**: Beautiful animated ocean waves background
 
 ## Project Structure
 

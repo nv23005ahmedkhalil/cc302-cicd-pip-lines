@@ -1,6 +1,12 @@
 # Use the official Python image as the base
 FROM python:3.9-slim
 
+# Add metadata labels
+LABEL version="1.0" \
+      description="To-Do App Dashboard with Flask, Docker, and CRUD Operations" \
+      maintainer="Ahmed Khalil" \
+      release="v1.0"
+
 # Set the working directory inside the container
 WORKDIR /app
 

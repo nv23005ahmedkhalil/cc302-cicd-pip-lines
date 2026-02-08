@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: todo-app:v1.0
     container_name: todo-app
     ports:
       - "5000:5000"

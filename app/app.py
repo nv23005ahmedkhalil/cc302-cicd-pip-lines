@@ -29,6 +29,10 @@ def index():
 def modern_app():
     return render_template("modern_app.html")
 
+@app.route("/premium", methods=["GET"])
+def premium_app():
+    return render_template("premium_app.html")
+
 # NLP Task Parser
 def parse_nlp_input(text):
     """Parse natural language input into task components"""

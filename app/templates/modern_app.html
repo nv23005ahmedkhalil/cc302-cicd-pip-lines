@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow Pro - Modern Task Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #E9E4DF;
+            --bg-secondary: #F5F2EE;
+            --accent: #6E5BA7;
+            --accent-light: #8B7CB8;
+            --text-primary: #2D2D2D;
+            --text-secondary: #666666;
+            --text-light: #999999;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+            --white: #FFFFFF;
+            --shadow-sm: 0 2px 8px rgba(45, 45, 45, 0.08);
+            --shadow-md: 0 4px 16px rgba(45, 45, 45, 0.12);
+            --shadow-lg: 0 12px 32px rgba(45, 45, 45, 0.15);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-light);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--white);
+            color: var(--accent);
+            border: 2px solid var(--accent);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+        }
+
+        /* View Tabs */
+        .view-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            border-bottom: 2px solid rgba(45, 45, 45, 0.1);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* Views Container */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* My Day View */
+        .my-day-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .my-day-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .my-day-header .date {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .my-day-header h2 {
+            font-size: 28px;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .reset-progress {
+            display: flex;
+            gap: 32px;
+            justify-content: center;
+            margin-bottom: 32px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+
+        /* Task Card */
+        .task-card {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--accent);
+        }
+
+        .task-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .task-card.completed {
+            opacity: 0.6;
+        }
+
+        .task-card.completed .task-title {
+            text-decoration: line-through;
+            color: var(--text-light);
+        }
+
+        .task-checkbox {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            border: 2px solid var(--accent);
+            border-radius: 6px;
+            cursor: pointer;
+            accent-color: var(--accent);
+            margin-top: 4px;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .task-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .task-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .priority-badge {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+
+        /* NLP Input */
+        .nlp-input-group {
+            margin-bottom: 32px;
+            background: var(--white);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .nlp-input-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .nlp-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid rgba(45, 45, 45, 0.1);
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+        }
+
+        .nlp-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(110, 91, 167, 0.1);
+        }
+
+        .nlp-hint {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        /* Kanban Board */
+        .kanban-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .kanban-column {
+            background: var(--bg-secondary);
+            border-radius: 14px;
+            padding: 20px;
+            min-height: 600px;
+        }
+
+        .kanban-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kanban-count {
+            background: var(--accent);
+            color: white;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .kanban-card {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+            cursor: move;
+            transition: all 0.3s ease;
+        }
+
+        .kanban-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        /* Pomodoro Timer */
+        .pomodoro-container {
+            max-width: 400px;
+            margin: 40px auto;
+            text-align: center;
+        }
+
+        .pomodoro-display {
+            font-size: 64px;
+            font-weight: 700;
+            color: var(--accent);
+            font-family: 'Courier New', monospace;
+            margin: 32px 0;
+            letter-spacing: 8px;
+        }
+
+        .pomodoro-controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .pomodoro-status {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(45, 45, 45, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            padding: 32px;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid rgba(45, 45, 45, 0.1);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(110, 91, 167, 0.1);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 32px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .kanban-container {
+                grid-template-columns: 1fr;
+            }
+
+            .reset-progress {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(110, 91, 167, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(110, 91, 167, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>✨ TaskFlow Pro</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="openSettings()">⚙️ Settings</button>
+                <button class="btn btn-primary" onclick="openAddTask()">+ New Task</button>
+            </div>
+        </div>
+
+        <!-- View Tabs -->
+        <div class="view-tabs">
+            <button class="tab active" onclick="switchView('my-day')">🎯 My Day</button>
+            <button class="tab" onclick="switchView('list')">📋 All Tasks</button>
+            <button class="tab" onclick="switchView('kanban')">📊 Kanban</button>
+            <button class="tab" onclick="switchView('timer')">⏲️ Pomodoro</button>
+        </div>
+
+        <!-- My Day View -->
+        <div class="view active" id="my-day">
+            <div class="my-day-container">
+                <div class="my-day-header">
+                    <div class="date" id="todayDate">Monday, February 8, 2026</div>
+                    <h2>My Day</h2>
+                </div>
+
+                <!-- Progress Stats -->
+                <div class="reset-progress">
+                    <div class="stat">
+                        <div class="stat-number" id="completedCount">0</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" id="totalCount">0</div>
+                        <div class="stat-label">Total Tasks</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" id="focusCount">0</div>
+                        <div class="stat-label">Pomodoros</div>
+                    </div>
+                </div>
+
+                <!-- NLP Input -->
+                <div class="nlp-input-group">
+                    <label class="nlp-input-label">Quick Add Task</label>
+                    <input 
+                        type="text" 
+                        class="nlp-input" 
+                        id="nlpInput"
+                        placeholder="e.g., Email Sarah at 2pm tomorrow #Work !!1"
+                        onkeypress="if(event.key==='Enter') parseAndAddTask()"
+                    >
+                    <div class="nlp-hint">💡 Tip: Use dates like 'today', 'tomorrow', 'next Monday' + priorities with !!1</div>
+                </div>
+
+                <!-- Today's Tasks -->
+                <div id="todayTasksList"></div>
+            </div>
+        </div>
+
+        <!-- List View -->
+        <div class="view" id="list">
+            <div class="my-day-container">
+                <h2 style="margin-bottom: 24px;">All Tasks</h2>
+                <div id="allTasksList"></div>
+            </div>
+        </div>
+
+        <!-- Kanban View -->
+        <div class="view" id="kanban">
+            <div class="kanban-container">
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        📝 To Do
+                        <span class="kanban-count" id="todoCount">0</span>
+                    </div>
+                    <div id="kanbanTodo"></div>
+                </div>
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        🔄 In Progress
+                        <span class="kanban-count" id="inProgressCount">0</span>
+                    </div>
+                    <div id="kanbanInProgress"></div>
+                </div>
+                <div class="kanban-column">
+                    <div class="kanban-header">
+                        ✅ Done
+                        <span class="kanban-count" id="doneCount">0</span>
+                    </div>
+                    <div id="kanbanDone"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pomodoro Timer -->
+        <div class="view" id="timer">
+            <div class="pomodoro-container">
+                <h2 style="margin-bottom: 32px;">Focus Timer</h2>
+                <div class="pomodoro-status" id="pomodoroStatus">Ready to focus</div>
+                <div class="pomodoro-display" id="pomodoroDisplay">25:00</div>
+                <div class="pomodoro-controls">
+                    <button class="btn btn-primary" onclick="startPomodoro()">▶ Start</button>
+                    <button class="btn btn-secondary" onclick="resetPomodoro()">↻ Reset</button>
+                </div>
+                <p style="color: var(--text-secondary); margin-top: 16px;">
+                    Complete 4 Pomodoros → 15 min break<br>
+                    Great for deep, focused work!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div class="modal" id="addTaskModal">
+        <div class="modal-content">
+            <div class="modal-header">Add New Task</div>
+            <div class="form-group">
+                <label class="form-label">Task Title</label>
+                <input type="text" class="form-input" id="taskTitle" placeholder="What do you need to do?">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description (optional)</label>
+                <textarea class="form-input" id="taskDescription" rows="4" placeholder="Add more details..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Date</label>
+                <input type="date" class="form-input" id="taskDate">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Priority</label>
+                <select class="form-input" id="taskPriority">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddTask()">Cancel</button>
+                <button class="btn btn-primary" onclick="addTaskFromModal()">Add Task</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        let pomodoroRunning = false;
+        let pomodoroTime = 25 * 60;
+
+        // Initialize
+        function init() {
+            setTodayDate();
+            loadTasks();
+            setDefaultDate();
+        }
+
+        function setTodayDate() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const today = new Date().toLocaleDateString('en-US', options);
+            document.getElementById('todayDate').textContent = today;
+        }
+
+        function setDefaultDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('taskDate').value = today;
+        }
+
+        // View switching
+        function switchView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewName).classList.add('active');
+            
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (viewName === 'kanban') renderKanban();
+        }
+
+        // Load all tasks
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                const tasks = await response.json();
+                renderMyDay(tasks);
+                renderAllTasks(tasks);
+                updateStats(tasks);
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+
+        // Render My Day view
+        function renderMyDay(tasks) {
+            const today = new Date().toISOString().split('T')[0];
+            const todayTasks = tasks.filter(t => t.date === today && !t.archived);
+            
+            let html = '';
+            todayTasks.forEach(task => {
+                html += `
+                    <div class="task-card ${task.completed ? 'completed' : ''}">
+                        <input 
+                            type="checkbox" 
+                            class="task-checkbox"
+                            ${task.completed ? 'checked' : ''}
+                            onchange="toggleTask(${task.id})"
+                        >
+                        <div class="task-content">
+                            <div class="task-title">${escapeHtml(task.title)}</div>
+                            ${task.description ? `<div class="task-description">${escapeHtml(task.description)}</div>` : ''}
+                            <div class="task-meta">
+                                <span>🕐 ${task.time || '00:00'}</span>
+                                <span>
+                                    <span class="priority-badge" style="background: ${getPriorityColor(task.priority || 'low')}"></span>
+                                    ${task.priority || 'low'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (todayTasks.length === 0) {
+                html = '<p style="text-align: center; color: var(--text-light); margin-top: 32px;">No tasks for today. Great job! 🎉</p>';
+            }
+
+            document.getElementById('todayTasksList').innerHTML = html;
+        }
+
+        // Render all tasks list
+        function renderAllTasks(tasks) {
+            const activeTasks = tasks.filter(t => !t.archived).sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            let html = '';
+            activeTasks.forEach(task => {
+                html += `
+                    <div class="task-card ${task.completed ? 'completed' : ''}">
+                        <input 
+                            type="checkbox" 
+                            class="task-checkbox"
+                            ${task.completed ? 'checked' : ''}
+                            onchange="toggleTask(${task.id})"
+                        >
+                        <div class="task-content">
+                            <div class="task-title">${escapeHtml(task.title)}</div>
+                            ${task.description ? `<div class="task-description">${escapeHtml(task.description)}</div>` : ''}
+                            <div class="task-meta">
+                                <span>📅 ${task.date}</span>
+                                <span>🕐 ${task.time || '00:00'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('allTasksList').innerHTML = html;
+        }
+
+        // Update statistics
+        function updateStats(tasks) {
+            const today = new Date().toISOString().split('T')[0];
+            const todayTasks = tasks.filter(t => t.date === today && !t.archived);
+            const completed = todayTasks.filter(t => t.completed).length;
+            
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('totalCount').textContent = todayTasks.length;
+        }
+
+        // Render Kanban
+        function renderKanban() {
+            // Placeholder Kanban implementation
+            document.getElementById('kanbanTodo').innerHTML = '<p style="color: var(--text-light);">Drag tasks here</p>';
+            document.getElementById('kanbanInProgress').innerHTML = '<p style="color: var(--text-light);">Drag tasks here</p>';
+            document.getElementById('kanbanDone').innerHTML = '<p style="color: var(--text-light);">Drag tasks here</p>';
+        }
+
+        // NLP Task Parsing
+        function parseAndAddTask() {
+            const input = document.getElementById('nlpInput').value.trim();
+            if (!input) return;
+
+            // Simple NLP parsing
+            const task = {
+                title: input,
+                description: '',
+                date: new Date().toISOString().split('T')[0],
+                time: '09:00',
+                priority: 'medium',
+                completed: false,
+                archived: false
+            };
+
+            // Parse priority markers
+            if (input.includes('!!!')) task.priority = 'high';
+            else if (input.includes('!!')) task.priority = 'high';
+            else if (input.includes('!')) task.priority = 'medium';
+
+            // Parse date indicators
+            if (input.includes('tomorrow')) {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                task.date = tomorrow.toISOString().split('T')[0];
+            } else if (input.includes('next week')) {
+                const nextWeek = new Date();
+                nextWeek.setDate(nextWeek.getDate() + 7);
+                task.date = nextWeek.toISOString().split('T')[0];
+            }
+
+            // Remove priority markers and dates from title
+            task.title = input.replace(/!+/g, '').replace(/tomorrow|next week/g, '').trim();
+
+            addTask(task);
+            document.getElementById('nlpInput').value = '';
+        }
+
+        // Add task
+        async function addTask(task) {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(task)
+                });
+                
+                if (response.ok) {
+                    loadTasks();
+                }
+            } catch (error) {
+                console.error('Error adding task:', error);
+            }
+        }
+
+        // Toggle task completion
+        async function toggleTask(id) {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                const tasks = await response.json();
+                const task = tasks.find(t => t.id === id);
+                
+                if (task) {
+                    await fetch(`${API_BASE}/tasks/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...task, completed: !task.completed })
+                    });
+                    
+                    loadTasks();
+                }
+            } catch (error) {
+                console.error('Error toggling task:', error);
+            }
+        }
+
+        // Pomodoro timer
+        function startPomodoro() {
+            pomodoroRunning = true;
+            const interval = setInterval(() => {
+                pomodoroTime--;
+                updatePomodoroDisplay();
+                
+                if (pomodoroTime <= 0) {
+                    clearInterval(interval);
+                    pomodoroRunning = false;
+                    playNotification();
+                    document.getElementById('pomodoroStatus').textContent = '✅ Break time!';
+                }
+            }, 1000);
+
+            document.getElementById('pomodoroStatus').textContent = '⏱️ Focus time active';
+        }
+
+        function resetPomodoro() {
+            pomodoroTime = 25 * 60;
+            pomodoroRunning = false;
+            document.getElementById('pomodoroStatus').textContent = 'Ready to focus';
+            updatePomodoroDisplay();
+        }
+
+        function updatePomodoroDisplay() {
+            const mins = Math.floor(pomodoroTime / 60);
+            const secs = pomodoroTime % 60;
+            document.getElementById('pomodoroDisplay').textContent = 
+                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function playNotification() {
+            // Notification audio (simple beep)
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        // Modal functions
+        function openAddTask() {
+            document.getElementById('addTaskModal').classList.add('active');
+        }
+
+        function closeAddTask() {
+            document.getElementById('addTaskModal').classList.remove('active');
+        }
+
+        function addTaskFromModal() {
+            const task = {
+                title: document.getElementById('taskTitle').value,
+                description: document.getElementById('taskDescription').value,
+                date: document.getElementById('taskDate').value,
+                priority: document.getElementById('taskPriority').value,
+                completed: false,
+                archived: false,
+                time: '09:00'
+            };
+
+            if (!task.title) {
+                alert('Please enter a task title');
+                return;
+            }
+
+            addTask(task);
+            closeAddTask();
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskDescription').value = '';
+        }
+
+        function openSettings() {
+            alert('Settings coming soon! 🚀');
+        }
+
+        // Helper functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getPriorityColor(priority) {
+            const colors = {
+                low: '#4CAF50',
+                medium: '#FF9800',
+                high: '#F44336'
+            };
+            return colors[priority] || '#999999';
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

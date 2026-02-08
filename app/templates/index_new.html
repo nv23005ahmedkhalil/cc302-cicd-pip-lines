@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Task Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(180deg, #f5f3f0 0%, #ede7e1 100%);
+            color: #2d2520;
+            position: relative;
+        }
+
+        .content {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            flex: 1;
+        }
+
+        .dashboard-container {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(45, 37, 32, 0.08);
+            overflow: hidden;
+            border: 1px solid rgba(45, 37, 32, 0.05);
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #7a9b8e 0%, #6b8d7e 100%);
+            color: white;
+            padding: 50px 40px;
+            text-align: left;
+        }
+
+        .dashboard-header h1 {
+            font-size: 36px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .dashboard-header p {
+            font-size: 15px;
+            opacity: 0.85;
+            font-weight: 400;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 35px 40px;
+            background: #faf8f6;
+            border-bottom: 1px solid #e8e4df;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(45, 37, 32, 0.06);
+            border: 1px solid #e8e4df;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(45, 37, 32, 0.1);
+        }
+
+        .stat-card.completed {
+            border-top: 3px solid #8fb588;
+        }
+
+        .stat-card.pending {
+            border-top: 3px solid #c9a577;
+        }
+
+        .stat-card.total {
+            border-top: 3px solid #7a9b8e;
+        }
+
+        .stat-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: #6b6560;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2d2520;
+        }
+
+        .progress-section {
+            padding: 35px 40px;
+            background: white;
+            border-bottom: 1px solid #e8e4df;
+        }
+
+        .progress-title {
+            color: #2d2520;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e8e4df;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(45, 37, 32, 0.05);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #7a9b8e 0%, #8fb588 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            color: white;
+            font-weight: 600;
+            font-size: 10px;
+            padding-right: 8px;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+        }
+
+        h2 {
+            color: #2d2520;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .input-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d9d3cc;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: #faf8f6;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #7a9b8e;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(122, 155, 142, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #7a9b8e 0%, #6b8d7e 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(122, 155, 142, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .view-toggle button {
+            flex: 1;
+        }
+
+        .tasks-section {
+            margin-bottom: 20px;
+        }
+
+        .tasks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e8e4df;
+        }
+
+        .tasks-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .task-count {
+            background: #7a9b8e;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .task-list {
+            list-style: none;
+        }
+
+        .task-item {
+            background: #faf8f6;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            transition: all 0.3s ease;
+            border: 1px solid #e8e4df;
+        }
+
+        .task-item:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(45, 37, 32, 0.1);
+            border-color: #7a9b8e;
+        }
+
+        .task-item.completed {
+            background: #f0f4f1;
+            opacity: 0.7;
+        }
+
+        .task-item.completed .task-title {
+            text-decoration: line-through;
+            color: #9a8f85;
+        }
+
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            cursor: pointer;
+            margin-top: 2px;
+            accent-color: #7a9b8e;
+        }
+
+        .task-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .task-title {
+            color: #2d2520;
+            font-weight: 600;
+            margin-bottom: 4px;
+            word-break: break-word;
+        }
+
+        .task-description {
+            color: #8a7f75;
+            font-size: 13px;
+            word-break: break-word;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .task-actions button {
+            padding: 8px 12px;
+            font-size: 12px;
+            background: #e8e4df;
+            color: #2d2520;
+            border: none;
+            margin: 0;
+        }
+
+        .task-actions button:hover {
+            background: #d9d3cc;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-delete {
+            background: #d9a199 !important;
+            color: white !important;
+        }
+
+        .btn-delete:hover {
+            background: #c98878 !important;
+        }
+
+        .btn-archive {
+            background: #c9a577 !important;
+            color: white !important;
+        }
+
+        .btn-archive:hover {
+            background: #b89460 !important;
+        }
+
+        .btn-restore {
+            background: #8fb588 !important;
+            color: white !important;
+        }
+
+        .btn-restore:hover {
+            background: #7da576 !important;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #a39a90;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(45, 37, 32, 0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            padding: 0;
+            box-shadow: 0 20px 60px rgba(45, 37, 32, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px;
+            border-bottom: 1px solid #e8e4df;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #a39a90;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+
+        .close-btn:hover {
+            color: #2d2520;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .modal-body .form-group {
+            margin-bottom: 20px;
+        }
+
+        .modal-body label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2d2520;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .modal-body input, .modal-body textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d9d3cc;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: #faf8f6;
+        }
+
+        .modal-body textarea {
+            resize: vertical;
+            font-family: monospace;
+            min-height: 180px;
+        }
+
+        .modal-body input:focus, .modal-body textarea:focus {
+            outline: none;
+            border-color: #7a9b8e;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(122, 155, 142, 0.1);
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            padding: 20px 25px;
+            border-top: 1px solid #e8e4df;
+        }
+
+        .modal-footer button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #7a9b8e 0%, #6b8d7e 100%);
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #e8e4df;
+            color: #2d2520;
+        }
+
+        .error-message, .success-message {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            animation: slideDown 0.3s ease;
+        }
+
+        .error-message {
+            background: #fadbd8;
+            color: #a93226;
+            display: none;
+        }
+
+        .success-message {
+            background: #d5f4e6;
+            color: #186a3b;
+            display: none;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #a39a90;
+        }
+
+        footer {
+            padding: 20px 40px;
+            text-align: left;
+            color: #a39a90;
+            font-size: 13px;
+            background: #faf8f6;
+            border-top: 1px solid #e8e4df;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard-header {
+                padding: 30px 20px;
+            }
+
+            .dashboard-header h1 {
+                font-size: 24px;
+            }
+
+            .stats-grid {
+                padding: 20px;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            .input-section {
+                flex-direction: column;
+            }
+
+            .task-item {
+                flex-direction: column;
+            }
+
+            .task-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <h1>TaskFlow</h1>
+                <p>Simplified task management for productivity</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card total">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-label">Total Tasks</div>
+                    <div class="stat-number" id="statTotal">0</div>
+                </div>
+                <div class="stat-card completed">
+                    <div class="stat-icon">✓</div>
+                    <div class="stat-label">Completed</div>
+                    <div class="stat-number" id="statCompleted">0</div>
+                </div>
+                <div class="stat-card pending">
+                    <div class="stat-icon">•</div>
+                    <div class="stat-label">Pending</div>
+                    <div class="stat-number" id="statPending">0</div>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-title">Completion Progress</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%">
+                        <span id="progressText">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container">
+                <h2>Tasks</h2>
+
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+
+                <div class="input-section">
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            id="taskTitle" 
+                            placeholder="Add a new task..."
+                            onkeypress="event.key === 'Enter' && addTask()"
+                        >
+                    </div>
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            id="taskDescription" 
+                            placeholder="Description (optional)"
+                            onkeypress="event.key === 'Enter' && addTask()"
+                        >
+                    </div>
+                    <button onclick="addTask()">Add</button>
+                    <button onclick="toggleBulkAddModal()" style="background: linear-gradient(135deg, #c9a577 0%, #b89460 100%);">Bulk</button>
+                    <button onclick="exportTasks()" style="background: linear-gradient(135deg, #8fb588 0%, #7da576 100%);">Export</button>
+                </div>
+
+                <div class="view-toggle">
+                    <button id="activeViewBtn" onclick="switchView('active')" style="background: #7a9b8e; color: white; padding: 10px 20px;">Active Tasks</button>
+                    <button id="archiveViewBtn" onclick="switchView('archive')" style="background: #e8e4df; color: #2d2520; padding: 10px 20px;">Archive</button>
+                </div>
+
+                <div class="tasks-section">
+                    <div class="tasks-header">
+                        <h2 id="viewTitle">Active Tasks</h2>
+                        <span class="task-count" id="taskCount">0</span>
+                    </div>
+                    <div id="tasksContainer">
+                        <div class="loading">Loading tasks...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Task</h2>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editTaskTitle">Task Title</label>
+                    <input type="text" id="editTaskTitle" placeholder="Enter task title">
+                </div>
+                <div class="form-group">
+                    <label for="editTaskDescription">Description</label>
+                    <input type="text" id="editTaskDescription" placeholder="Enter description (optional)">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-save" onclick="saveEditTask()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Add Modal -->
+    <div id="bulkAddModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Bulk Add Tasks</h2>
+                <button class="close-btn" onclick="toggleBulkAddModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: #666; margin-bottom: 15px; font-size: 13px;">One task per line. Format: Task Title | Description (optional)</p>
+                <textarea id="bulkAddText" placeholder="Learn Python&#10;Review code | Code review for PR #123&#10;Update documentation"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="toggleBulkAddModal()">Cancel</button>
+                <button class="btn-save" onclick="bulkAddTasks()">Add All</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        © Ahmed Abdulameer | NV23005
+    </footer>
+
+    <script>
+        const API_BASE = '';
+        let currentEditTaskId = null;
+        let currentView = 'active';
+
+        // Update dashboard statistics
+        function updateDashboard(tasks) {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed).length;
+            const pending = total - completed;
+            const completion = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statCompleted').textContent = completed;
+            document.getElementById('statPending').textContent = pending;
+
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            progressFill.style.width = completion + '%';
+            progressText.textContent = completion + '%';
+        }
+
+        // Fetch and display all tasks
+        async function loadTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                if (!response.ok) throw new Error('Failed to load tasks');
+                const tasks = await response.json();
+                displayTasks(tasks);
+                updateDashboard(tasks);
+            } catch (error) {
+                showError('Failed to load tasks');
+            }
+        }
+
+        // Display tasks in the UI
+        function displayTasks(tasks) {
+            const container = document.getElementById('tasksContainer');
+            const count = document.getElementById('taskCount');
+            
+            const filteredTasks = tasks.filter(t => {
+                if (currentView === 'active') return !t.archived;
+                else return t.archived;
+            });
+            
+            count.textContent = filteredTasks.length;
+
+            if (filteredTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">${currentView === 'active' ? '🎯' : '📦'}</div>
+                        <p>${currentView === 'active' ? 'No tasks. Add one to get started!' : 'No archived tasks.'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <ul class="task-list">
+                    ${filteredTasks.map(task => `
+                        <li class="task-item ${task.completed ? 'completed' : ''}">
+                            <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id}, this.checked)">
+                            <div class="task-content">
+                                <div class="task-title">${escapeHtml(task.title)}</div>
+                                ${task.description ? `<div class="task-description">${escapeHtml(task.description)}</div>` : ''}
+                            </div>
+                            <div class="task-actions">
+                                <button class="btn-edit" onclick="openEditModal(${task.id}, '${escapeHtml(task.title).replace(/'/g, "\\'")}', '${task.description ? escapeHtml(task.description).replace(/'/g, "\\'") : ''}')">Edit</button>
+                                ${currentView === 'active' ? `<button class="btn-archive" onclick="toggleArchiveTask(${task.id}, true)">Archive</button>` : `<button class="btn-restore" onclick="toggleArchiveTask(${task.id}, false)">Restore</button>`}
+                                <button class="btn-delete" onclick="deleteTask(${task.id})">Delete</button>
+                            </div>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+        }
+
+        // Open edit modal
+        function openEditModal(taskId, title, description) {
+            currentEditTaskId = taskId;
+            document.getElementById('editTaskTitle').value = title;
+            document.getElementById('editTaskDescription').value = description;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        // Close edit modal
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            currentEditTaskId = null;
+        }
+
+        // Save edited task
+        async function saveEditTask() {
+            if (!currentEditTaskId) return;
+            const title = document.getElementById('editTaskTitle').value.trim();
+            const description = document.getElementById('editTaskDescription').value.trim();
+
+            if (!title) {
+                showError('Please enter a task title');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${currentEditTaskId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: title, description: description })
+                });
+
+                if (!response.ok) throw new Error('Failed to update task');
+                closeEditModal();
+                showSuccess('Task updated!');
+                await loadTasks();
+            } catch (error) {
+                showError('Failed to update task');
+            }
+        }
+
+        // Add a new task
+        async function addTask() {
+            const title = document.getElementById('taskTitle').value.trim();
+            const description = document.getElementById('taskDescription').value.trim();
+
+            if (!title) {
+                showError('Please enter a task title');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: title, description: description })
+                });
+
+                if (!response.ok) throw new Error('Failed to add task');
+                document.getElementById('taskTitle').value = '';
+                document.getElementById('taskDescription').value = '';
+                showSuccess('Task added!');
+                await loadTasks();
+            } catch (error) {
+                showError('Failed to add task');
+            }
+        }
+
+        // Toggle task completion
+        async function toggleTask(taskId, completed) {
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ completed: completed })
+                });
+
+                if (!response.ok) throw new Error('Failed to update task');
+                await loadTasks();
+            } catch (error) {
+                showError('Failed to update task');
+            }
+        }
+
+        // Delete a task
+        async function deleteTask(taskId) {
+            if (!confirm('Delete this task?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${taskId}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error('Failed to delete task');
+                showSuccess('Task deleted!');
+                await loadTasks();
+            } catch (error) {
+                showError('Failed to delete task');
+            }
+        }
+
+        // Archive/Unarchive task
+        async function toggleArchiveTask(taskId, archived) {
+            try {
+                const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ archived: archived })
+                });
+
+                if (!response.ok) throw new Error('Failed to archive task');
+                showSuccess(archived ? 'Task archived!' : 'Task restored!');
+                await loadTasks();
+            } catch (error) {
+                showError('Failed to update task');
+            }
+        }
+
+        // Toggle bulk add modal
+        function toggleBulkAddModal() {
+            document.getElementById('bulkAddModal').classList.toggle('active');
+        }
+
+        // Bulk add tasks
+        async function bulkAddTasks() {
+            const text = document.getElementById('bulkAddText').value.trim();
+            if (!text) {
+                showError('Please enter at least one task');
+                return;
+            }
+
+            const lines = text.split('\n').filter(line => line.trim());
+            let added = 0;
+
+            for (const line of lines) {
+                const parts = line.split('|');
+                const title = parts[0].trim();
+                const description = parts[1] ? parts[1].trim() : '';
+
+                if (!title) continue;
+
+                try {
+                    const response = await fetch(`${API_BASE}/tasks`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title: title, description: description })
+                    });
+
+                    if (response.ok) added++;
+                } catch (error) {
+                    console.error('Error adding task:', error);
+                }
+            }
+
+            showSuccess(`Added ${added} task(s)!`);
+            toggleBulkAddModal();
+            await loadTasks();
+        }
+
+        // Switch between active and archive view
+        function switchView(view) {
+            currentView = view;
+            document.getElementById('activeViewBtn').style.background = view === 'active' ? '#7a9b8e' : '#e8e4df';
+            document.getElementById('activeViewBtn').style.color = view === 'active' ? 'white' : '#2d2520';
+            document.getElementById('archiveViewBtn').style.background = view === 'archive' ? '#7a9b8e' : '#e8e4df';
+            document.getElementById('archiveViewBtn').style.color = view === 'archive' ? 'white' : '#2d2520';
+            document.getElementById('viewTitle').textContent = view === 'active' ? 'Active Tasks' : 'Archived Tasks';
+            loadTasks();
+        }
+
+        // Export tasks as JSON
+        async function exportTasks() {
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                if (!response.ok) throw new Error('Failed to fetch tasks');
+                
+                const tasks = await response.json();
+                const dataStr = JSON.stringify(tasks, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `tasks-${new Date().getTime()}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showSuccess('Tasks exported!');
+            } catch (error) {
+                showError('Failed to export tasks');
+            }
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => { errorDiv.style.display = 'none'; }, 4000);
+        }
+
+        // Show success message
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => { successDiv.style.display = 'none'; }, 4000);
+        }
+
+        // Load tasks on page load and set up auto-refresh
+        window.addEventListener('load', loadTasks);
+        setInterval(loadTasks, 5000);
+    </script>
+</body>
+</html>

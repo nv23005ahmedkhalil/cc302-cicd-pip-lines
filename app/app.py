@@ -63,6 +63,7 @@ def create_task():
         "title": data["title"],
         "description": data.get("description", ""),
         "completed": False,
+        "archived": False,
         "created_at": datetime.now().isoformat()
     }
     tasks.append(new_task)
@@ -78,6 +79,8 @@ def update_task(task_id):
         return jsonify({"error": "Task not found"}), 404
     if "completed" in data:
         task["completed"] = data["completed"]
+    if "archived" in data:
+        task["archived"] = data["archived"]
     if "title" in data:
         task["title"] = data["title"]
     if "description" in data:

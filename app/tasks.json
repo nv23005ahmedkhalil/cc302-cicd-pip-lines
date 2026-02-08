@@ -3,14 +3,22 @@
         "id": 1,
         "title": "TODO",
         "description": "Ahmed Khalil 23005",
-        "completed": false,
+        "completed": true,
         "created_at": "2026-02-08T08:09:14.367277"
     },
     {
         "id": 2,
         "title": "demo v2",
         "description": "test",
-        "completed": false,
+        "completed": true,
         "created_at": "2026-02-08T08:18:32.374042"
+    },
+    {
+        "id": 3,
+        "title": "Test Archive",
+        "description": "Test archive feature",
+        "completed": false,
+        "archived": true,
+        "created_at": "2026-02-08T08:52:36.174647"
     }
 ]

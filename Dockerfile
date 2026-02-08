@@ -2,10 +2,10 @@
 FROM python:3.9-slim
 
 # Add metadata labels
-LABEL version="1.0" \
+LABEL version="1.2" \
       description="To-Do App Dashboard with Flask, Docker, and CRUD Operations" \
       maintainer="Ahmed Khalil" \
-      release="v1.0"
+      release="v1.2"
 
 # Set the working directory inside the container
 WORKDIR /app

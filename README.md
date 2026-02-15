@@ -5,9 +5,13 @@ A simple Flask-based To-Do application that allows users to create, read, update
 ## Features
 
 - **CRUD Operations**: Create, read, update, and delete tasks
+- **Smart Quick Add**: Natural language parser for task creation with priority, dates, and tags
+- **Focus Sessions**: Pomodoro timer with auto-progress tracking
+- **Task Dependencies**: Manage task relationships with circular dependency detection
 - **Local Storage**: Data is stored in a JSON file
 - **Containerized**: Fully containerized using Docker and Docker Compose
 - **RESTful API**: Easy-to-use REST API for managing tasks
+- **CI/CD Pipeline**: Automated testing and deployment with GitHub Actions
 - **Development Ready**: Includes hot-reload for development
 - **Interactive Dashboard**: Real-time statistics with visual charts
 - **Task Statistics**: Progress bar and task distribution graph
@@ -80,6 +84,45 @@ A simple Flask-based To-Do application that allows users to create, read, update
    ```
 
 3. The app will be accessible at [http://localhost:5000](http://localhost:5000)
+
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment.
+
+### Automated Workflows
+
+1. **CI - Tests** (runs on all PRs and pushes):
+   - Automated unit testing with pytest
+   - Code coverage reporting
+   - Code quality checks (flake8, black)
+
+2. **CD - Build and Deploy** (runs on pushes to main):
+   - Builds Docker image
+   - Tests the container
+   - Pushes to Docker Hub (when configured)
+
+### Setup CI/CD
+
+To enable full CI/CD:
+
+1. **Add Docker Hub secrets** (for automated deployment):
+   - Go to **Settings** → **Secrets and variables** → **Actions**
+   - Add `DOCKER_USERNAME` and `DOCKER_PASSWORD`
+
+2. **View workflow status**:
+   - Check the **Actions** tab in GitHub
+   - See status checks on pull requests
+
+3. **Run tests locally**:
+   ```bash
+   cd app
+   pip install pytest pytest-cov flake8 black
+   pytest
+   flake8 .
+   black --check .
+   ```
+
+See [.github/workflows/README.md](.github/workflows/README.md) for detailed documentation.
 
 ## API Endpoints
 

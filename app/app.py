@@ -4,6 +4,7 @@ import json
 import os
 from datetime import datetime, timedelta
 import re
+from utils.parser import parse_quick_add, validate_task_data
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -195,6 +196,8 @@ def create_task():
         "description": data.get("description", ""),
         "date": data.get("date", today),
         "time": data.get("time", "00:00"),
+        "priority": data.get("priority", "medium"),
+        "tags": data.get("tags", []),
         "completed": False,
         "archived": False,
         "created_at": datetime.now().isoformat()
@@ -202,6 +205,57 @@ def create_task():
     tasks.append(new_task)
     save_tasks(tasks)
     return jsonify(new_task), 201
+
+@app.route("/tasks/quick-add", methods=["POST"])
+def quick_add_task():
+    """
+    Smart Quick Add - Parse natural language input and create task.
+    Example: "Submit report tomorrow 6pm !high #school"
+    """
+    data = request.json
+    text = data.get('text', '').strip()
+    
+    if not text:
+        return jsonify({"error": "Text input is required"}), 400
+    
+    # Parse the natural language input
+    parsed = parse_quick_add(text)
+    
+    # Validate parsed data
+    is_valid, error = validate_task_data(parsed)
+    if not is_valid:
+        return jsonify({
+            "error": error,
+            "parse_metadata": parsed.get('parse_metadata')
+        }), 400
+    
+    # Create task from parsed data
+    tasks = load_tasks()
+    task_id = max([task["id"] for task in tasks], default=0) + 1
+    
+    new_task = {
+        "id": task_id,
+        "title": parsed['title'],
+        "description": "",
+        "date": parsed['due_date'],
+        "time": parsed['time'],
+        "priority": parsed['priority'],
+        "tags": parsed['tags'],
+        "completed": False,
+        "archived": False,
+        "created_at": datetime.now().isoformat()
+    }
+    
+    tasks.append(new_task)
+    save_tasks(tasks)
+    
+    # Return task with parse metadata
+    response = {
+        **new_task,
+        "parse_metadata": parsed['parse_metadata']
+    }
+    
+    return jsonify(response), 201
 
 @app.route("/tasks/<int:task_id>", methods=["PUT"])
 def update_task(task_id):
@@ -222,6 +276,10 @@ def update_task(task_id):
         task["date"] = data["date"]
     if "time" in data:
         task["time"] = data["time"]
+    if "priority" in data:
+        task["priority"] = data["priority"]
+    if "tags" in data:
+        task["tags"] = data["tags"]
     save_tasks(tasks)
     return jsonify(task)
 

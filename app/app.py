@@ -5,6 +5,10 @@ import os
 from datetime import datetime, timedelta
 import re
 from utils.parser import parse_quick_add, validate_task_data
+from utils.focus import (
+    start_focus_session, stop_focus_session,
+    get_today_stats, get_active_session_status
+)
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -198,6 +202,7 @@ def create_task():
         "time": data.get("time", "00:00"),
         "priority": data.get("priority", "medium"),
         "tags": data.get("tags", []),
+        "focus_minutes": 0,
         "completed": False,
         "archived": False,
         "created_at": datetime.now().isoformat()
@@ -241,6 +246,7 @@ def quick_add_task():
         "time": parsed['time'],
         "priority": parsed['priority'],
         "tags": parsed['tags'],
+        "focus_minutes": 0,
         "completed": False,
         "archived": False,
         "created_at": datetime.now().isoformat()
@@ -292,6 +298,112 @@ def delete_task(task_id):
     tasks = [t for t in tasks if t['id'] != task_id]
     save_tasks(tasks)
     return jsonify({"message": "Task deleted"}), 200
+
+# ===== Focus Session Endpoints =====
+
+@app.route("/tasks/<int:task_id>/focus/start", methods=["POST"])
+def start_task_focus(task_id):
+    """
+    Start a focus session for a task.
+    Body: { "duration": 25 or 50 } (optional, defaults to 25)
+    """
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    
+    data = request.json or {}
+    duration = data.get('duration', 25)
+    
+    if duration not in [25, 50]:
+        return jsonify({"error": "Duration must be 25 or 50 minutes"}), 400
+    
+    session, success = start_focus_session(task_id, duration)
+    
+    if not success:
+        return jsonify(session), 409  # Conflict
+    
+    return jsonify({
+        "message": f"Focus session started ({duration} min)",
+        "session": session,
+        "task": task
+    }), 201
+
+
+@app.route("/tasks/<int:task_id>/focus/stop", methods=["POST"])
+def stop_task_focus(task_id):
+    """
+    Stop a focus session and update task focus_minutes.
+    """
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    
+    session, focus_minutes, suggestions = stop_focus_session(task_id)
+    
+    if session is None:
+        return jsonify(suggestions), 404
+    
+    # Update task focus_minutes
+    current_focus = task.get('focus_minutes', 0)
+    task['focus_minutes'] = current_focus + focus_minutes
+    
+    # Auto-suggest status change
+    if suggestions['status_change'] and not task.get('completed'):
+        if suggestions['status_change'] == 'done':
+            # Don't auto-complete, just suggest
+            task['status_suggestion'] = 'done'
+    
+    save_tasks(tasks)
+    
+    return jsonify({
+        "message": "Focus session completed",
+        "session": session,
+        "focus_added": focus_minutes,
+        "total_focus_minutes": task['focus_minutes'],
+        "suggestions": suggestions,
+        "task": task
+    }), 200
+
+
+@app.route("/tasks/<int:task_id>/focus/status", methods=["GET"])
+def get_task_focus_status(task_id):
+    """
+    Check if task has an active focus session.
+    """
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    
+    active_session = get_active_session_status(task_id)
+    
+    return jsonify({
+        "task_id": task_id,
+        "has_active_session": active_session is not None,
+        "active_session": active_session,
+        "total_focus_minutes": task.get('focus_minutes', 0)
+    })
+
+
+@app.route("/api/focus/stats", methods=["GET"])
+def get_focus_stats():
+    """
+    Get today's focus statistics.
+    Query params: task_id (optional)
+    """
+    task_id = request.args.get('task_id', type=int)
+    stats = get_today_stats(task_id)
+    
+    # Also get overall stats from tasks
+    tasks = load_tasks()
+    overall_focus = sum(t.get('focus_minutes', 0) for t in tasks)
+    
+    stats['overall_focus_minutes'] = overall_focus
+    stats['task_count'] = len([t for t in tasks if t.get('focus_minutes', 0) > 0])
+    
+    return jsonify(stats)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=True)

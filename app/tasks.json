@@ -36,5 +36,125 @@
         "completed": false,
         "archived": false,
         "created_at": "2026-02-15T08:54:23.297983"
+    },
+    {
+        "id": 6,
+        "title": "Task A - Foundation",
+        "description": "",
+        "date": "2026-02-15",
+        "time": "00:00",
+        "priority": "high",
+        "tags": [],
+        "focus_minutes": 0,
+        "depends_on": [],
+        "completed": true,
+        "archived": false,
+        "created_at": "2026-02-15T08:59:52.240671"
+    },
+    {
+        "id": 7,
+        "title": "Task B - Build on A",
+        "description": "",
+        "date": "2026-02-15",
+        "time": "00:00",
+        "priority": "medium",
+        "tags": [],
+        "focus_minutes": 0,
+        "depends_on": [
+            6
+        ],
+        "completed": true,
+        "archived": false,
+        "created_at": "2026-02-15T08:59:52.243081"
+    },
+    {
+        "id": 8,
+        "title": "Task C - Final step",
+        "description": "",
+        "date": "2026-02-15",
+        "time": "00:00",
+        "priority": "low",
+        "tags": [],
+        "focus_minutes": 0,
+        "depends_on": [
+            7
+        ],
+        "completed": true,
+        "archived": false,
+        "created_at": "2026-02-15T08:59:52.245537"
+    },
+    {
+        "id": 9,
+        "title": "Task D - Test removal",
+        "description": "",
+        "date": "2026-02-15",
+        "time": "00:00",
+        "priority": "medium",
+        "tags": [],
+        "focus_minutes": 0,
+        "depends_on": [],
+        "completed": false,
+        "archived": false,
+        "created_at": "2026-02-15T08:59:52.280163"
+    },
+    {
+        "id": 10,
+        "title": "Task A - Foundation",
+        "description": "",
+        "date": "2026-02-15",
+        "time": "00:00",
+        "priority": "high",
+        "tags": [],
+        "focus_minutes": 0,
+        "depends_on": [],
+        "completed": true,
+        "archived": false,
+        "created_at": "2026-02-15T09:00:00.201510"
+    },
+    {
+        "id": 11,
+        "title": "Task B - Build on A",
+        "description": "",
+        "date": "2026-02-15",
+        "time": "00:00",
+        "priority": "medium",
+        "tags": [],
+        "focus_minutes": 0,
+        "depends_on": [
+            10
+        ],
+        "completed": true,
+        "archived": false,
+        "created_at": "2026-02-15T09:00:00.204002"
+    },
+    {
+        "id": 12,
+        "title": "Task C - Final step",
+        "description": "",
+        "date": "2026-02-15",
+        "time": "00:00",
+        "priority": "low",
+        "tags": [],
+        "focus_minutes": 0,
+        "depends_on": [
+            11
+        ],
+        "completed": true,
+        "archived": false,
+        "created_at": "2026-02-15T09:00:00.206558"
+    },
+    {
+        "id": 13,
+        "title": "Task D - Test removal",
+        "description": "",
+        "date": "2026-02-15",
+        "time": "00:00",
+        "priority": "medium",
+        "tags": [],
+        "focus_minutes": 0,
+        "depends_on": [],
+        "completed": false,
+        "archived": false,
+        "created_at": "2026-02-15T09:00:00.237464"
     }
 ]

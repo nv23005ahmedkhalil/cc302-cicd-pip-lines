@@ -9,6 +9,11 @@ from utils.focus import (
     start_focus_session, stop_focus_session,
     get_today_stats, get_active_session_status
 )
+from utils.dependencies import (
+    add_dependency, remove_dependency,
+    is_blocked, get_blocking_tasks,
+    get_dependency_chain, validate_dependencies
+)
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -203,6 +208,7 @@ def create_task():
         "priority": data.get("priority", "medium"),
         "tags": data.get("tags", []),
         "focus_minutes": 0,
+        "depends_on": data.get("depends_on", []),
         "completed": False,
         "archived": False,
         "created_at": datetime.now().isoformat()
@@ -247,6 +253,7 @@ def quick_add_task():
         "priority": parsed['priority'],
         "tags": parsed['tags'],
         "focus_minutes": 0,
+        "depends_on": [],
         "completed": False,
         "archived": False,
         "created_at": datetime.now().isoformat()
@@ -270,6 +277,20 @@ def update_task(task_id):
     task = next((t for t in tasks if t['id'] == task_id), None)
     if not task:
         return jsonify({"error": "Task not found"}), 404
+    
+    # Check if trying to complete a blocked task
+    if data.get("completed") == True and not task.get("completed", False):
+        blocked, blocking_tasks = is_blocked(task, tasks)
+        if blocked:
+            blocking_ids = [t['id'] for t in blocking_tasks]
+            blocking_titles = [f"#{t['id']} {t['title']}" for t in blocking_tasks]
+            return jsonify({
+                "error": "Cannot complete task - blocked by dependencies",
+                "blocking_tasks": blocking_ids,
+                "blocking_details": blocking_titles,
+                "message": f"Complete these tasks first: {', '.join(blocking_titles)}"
+            }), 400
+    
     if "completed" in data:
         task["completed"] = data["completed"]
     if "archived" in data:
@@ -404,6 +425,116 @@ def get_focus_stats():
     stats['task_count'] = len([t for t in tasks if t.get('focus_minutes', 0) > 0])
     
     return jsonify(stats)
+
+# ===== Dependency Endpoints =====
+
+@app.route("/tasks/<int:task_id>/dependencies", methods=["POST"])
+def add_task_dependency(task_id):
+    """
+    Add a dependency to a task.
+    Body: { "dependency_id": 5 }
+    """
+    tasks = load_tasks()
+    data = request.json or {}
+    dependency_id = data.get('dependency_id')
+    
+    if not dependency_id:
+        return jsonify({"error": "dependency_id is required"}), 400
+    
+    success, message, updated_task = add_dependency(task_id, dependency_id, tasks)
+    
+    if not success:
+        return jsonify({"error": message}), 400
+    
+    save_tasks(tasks)
+    
+    return jsonify({
+        "message": message,
+        "task": updated_task,
+        "dependencies": updated_task.get('depends_on', [])
+    }), 200
+
+
+@app.route("/tasks/<int:task_id>/dependencies/<int:dependency_id>", methods=["DELETE"])
+def remove_task_dependency(task_id, dependency_id):
+    """
+    Remove a dependency from a task.
+    """
+    tasks = load_tasks()
+    
+    success, message, updated_task = remove_dependency(task_id, dependency_id, tasks)
+    
+    if not success:
+        return jsonify({"error": message}), 400
+    
+    save_tasks(tasks)
+    
+    return jsonify({
+        "message": message,
+        "task": updated_task,
+        "dependencies": updated_task.get('depends_on', [])
+    }), 200
+
+
+@app.route("/tasks/<int:task_id>/blocked", methods=["GET"])
+def check_task_blocked(task_id):
+    """
+    Check if a task is blocked by incomplete dependencies.
+    """
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    
+    blocked, blocking_tasks = is_blocked(task, tasks)
+    
+    blocking_info = [
+        {
+            "id": t['id'],
+            "title": t['title'],
+            "completed": t.get('completed', False)
+        }
+        for t in blocking_tasks
+    ]
+    
+    return jsonify({
+        "task_id": task_id,
+        "is_blocked": blocked,
+        "blocking_count": len(blocking_tasks),
+        "blocking_tasks": blocking_info,
+        "message": f"Blocked by {len(blocking_tasks)} incomplete dependencies" if blocked else "Not blocked"
+    })
+
+
+@app.route("/tasks/<int:task_id>/dependency-chain", methods=["GET"])
+def get_task_dependency_chain(task_id):
+    """
+    Get the full dependency chain for a task (all tasks that must be completed first).
+    """
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    
+    chain_ids = get_dependency_chain(task_id, tasks)
+    
+    chain_tasks = []
+    for tid in chain_ids:
+        t = next((task for task in tasks if task['id'] == tid), None)
+        if t:
+            chain_tasks.append({
+                "id": t['id'],
+                "title": t['title'],
+                "completed": t.get('completed', False)
+            })
+    
+    return jsonify({
+        "task_id": task_id,
+        "dependency_chain": chain_tasks,
+        "total_dependencies": len(chain_tasks)
+    })
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=True)

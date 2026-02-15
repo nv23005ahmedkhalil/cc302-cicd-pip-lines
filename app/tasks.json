@@ -6,5 +6,35 @@
         "completed": true,
         "archived": false,
         "created_at": "2026-02-08T08:52:36.174647"
+    },
+    {
+        "id": 4,
+        "title": "Write documentation",
+        "description": "",
+        "date": "2026-02-16",
+        "time": "14:00",
+        "priority": "high",
+        "tags": [
+            "work"
+        ],
+        "focus_minutes": 0,
+        "completed": false,
+        "archived": false,
+        "created_at": "2026-02-15T08:54:10.420864"
+    },
+    {
+        "id": 5,
+        "title": "Write documentation",
+        "description": "",
+        "date": "2026-02-16",
+        "time": "14:00",
+        "priority": "high",
+        "tags": [
+            "work"
+        ],
+        "focus_minutes": 0,
+        "completed": false,
+        "archived": false,
+        "created_at": "2026-02-15T08:54:23.297983"
     }
 ]

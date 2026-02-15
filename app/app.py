@@ -4,6 +4,16 @@ import json
 import os
 from datetime import datetime, timedelta
 import re
+from utils.parser import parse_quick_add, validate_task_data
+from utils.focus import (
+    start_focus_session, stop_focus_session,
+    get_today_stats, get_active_session_status
+)
+from utils.dependencies import (
+    add_dependency, remove_dependency,
+    is_blocked, get_blocking_tasks,
+    get_dependency_chain, validate_dependencies
+)
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -195,6 +205,10 @@ def create_task():
         "description": data.get("description", ""),
         "date": data.get("date", today),
         "time": data.get("time", "00:00"),
+        "priority": data.get("priority", "medium"),
+        "tags": data.get("tags", []),
+        "focus_minutes": 0,
+        "depends_on": data.get("depends_on", []),
         "completed": False,
         "archived": False,
         "created_at": datetime.now().isoformat()
@@ -203,6 +217,59 @@ def create_task():
     save_tasks(tasks)
     return jsonify(new_task), 201
 
+@app.route("/tasks/quick-add", methods=["POST"])
+def quick_add_task():
+    """
+    Smart Quick Add - Parse natural language input and create task.
+    Example: "Submit report tomorrow 6pm !high #school"
+    """
+    data = request.json
+    text = data.get('text', '').strip()
+    
+    if not text:
+        return jsonify({"error": "Text input is required"}), 400
+    
+    # Parse the natural language input
+    parsed = parse_quick_add(text)
+    
+    # Validate parsed data
+    is_valid, error = validate_task_data(parsed)
+    if not is_valid:
+        return jsonify({
+            "error": error,
+            "parse_metadata": parsed.get('parse_metadata')
+        }), 400
+    
+    # Create task from parsed data
+    tasks = load_tasks()
+    task_id = max([task["id"] for task in tasks], default=0) + 1
+    
+    new_task = {
+        "id": task_id,
+        "title": parsed['title'],
+        "description": "",
+        "date": parsed['due_date'],
+        "time": parsed['time'],
+        "priority": parsed['priority'],
+        "tags": parsed['tags'],
+        "focus_minutes": 0,
+        "depends_on": [],
+        "completed": False,
+        "archived": False,
+        "created_at": datetime.now().isoformat()
+    }
+    
+    tasks.append(new_task)
+    save_tasks(tasks)
+    
+    # Return task with parse metadata
+    response = {
+        **new_task,
+        "parse_metadata": parsed['parse_metadata']
+    }
+    
+    return jsonify(response), 201
+
 @app.route("/tasks/<int:task_id>", methods=["PUT"])
 def update_task(task_id):
     data = request.json
@@ -210,6 +277,20 @@ def update_task(task_id):
     task = next((t for t in tasks if t['id'] == task_id), None)
     if not task:
         return jsonify({"error": "Task not found"}), 404
+    
+    # Check if trying to complete a blocked task
+    if data.get("completed") == True and not task.get("completed", False):
+        blocked, blocking_tasks = is_blocked(task, tasks)
+        if blocked:
+            blocking_ids = [t['id'] for t in blocking_tasks]
+            blocking_titles = [f"#{t['id']} {t['title']}" for t in blocking_tasks]
+            return jsonify({
+                "error": "Cannot complete task - blocked by dependencies",
+                "blocking_tasks": blocking_ids,
+                "blocking_details": blocking_titles,
+                "message": f"Complete these tasks first: {', '.join(blocking_titles)}"
+            }), 400
+    
     if "completed" in data:
         task["completed"] = data["completed"]
     if "archived" in data:
@@ -222,6 +303,10 @@ def update_task(task_id):
         task["date"] = data["date"]
     if "time" in data:
         task["time"] = data["time"]
+    if "priority" in data:
+        task["priority"] = data["priority"]
+    if "tags" in data:
+        task["tags"] = data["tags"]
     save_tasks(tasks)
     return jsonify(task)
 
@@ -234,6 +319,222 @@ def delete_task(task_id):
     tasks = [t for t in tasks if t['id'] != task_id]
     save_tasks(tasks)
     return jsonify({"message": "Task deleted"}), 200
+
+# ===== Focus Session Endpoints =====
+
+@app.route("/tasks/<int:task_id>/focus/start", methods=["POST"])
+def start_task_focus(task_id):
+    """
+    Start a focus session for a task.
+    Body: { "duration": 25 or 50 } (optional, defaults to 25)
+    """
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    
+    data = request.json or {}
+    duration = data.get('duration', 25)
+    
+    if duration not in [25, 50]:
+        return jsonify({"error": "Duration must be 25 or 50 minutes"}), 400
+    
+    session, success = start_focus_session(task_id, duration)
+    
+    if not success:
+        return jsonify(session), 409  # Conflict
+    
+    return jsonify({
+        "message": f"Focus session started ({duration} min)",
+        "session": session,
+        "task": task
+    }), 201
+
+
+@app.route("/tasks/<int:task_id>/focus/stop", methods=["POST"])
+def stop_task_focus(task_id):
+    """
+    Stop a focus session and update task focus_minutes.
+    """
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    
+    session, focus_minutes, suggestions = stop_focus_session(task_id)
+    
+    if session is None:
+        return jsonify(suggestions), 404
+    
+    # Update task focus_minutes
+    current_focus = task.get('focus_minutes', 0)
+    task['focus_minutes'] = current_focus + focus_minutes
+    
+    # Auto-suggest status change
+    if suggestions['status_change'] and not task.get('completed'):
+        if suggestions['status_change'] == 'done':
+            # Don't auto-complete, just suggest
+            task['status_suggestion'] = 'done'
+    
+    save_tasks(tasks)
+    
+    return jsonify({
+        "message": "Focus session completed",
+        "session": session,
+        "focus_added": focus_minutes,
+        "total_focus_minutes": task['focus_minutes'],
+        "suggestions": suggestions,
+        "task": task
+    }), 200
+
+
+@app.route("/tasks/<int:task_id>/focus/status", methods=["GET"])
+def get_task_focus_status(task_id):
+    """
+    Check if task has an active focus session.
+    """
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    
+    active_session = get_active_session_status(task_id)
+    
+    return jsonify({
+        "task_id": task_id,
+        "has_active_session": active_session is not None,
+        "active_session": active_session,
+        "total_focus_minutes": task.get('focus_minutes', 0)
+    })
+
+
+@app.route("/api/focus/stats", methods=["GET"])
+def get_focus_stats():
+    """
+    Get today's focus statistics.
+    Query params: task_id (optional)
+    """
+    task_id = request.args.get('task_id', type=int)
+    stats = get_today_stats(task_id)
+    
+    # Also get overall stats from tasks
+    tasks = load_tasks()
+    overall_focus = sum(t.get('focus_minutes', 0) for t in tasks)
+    
+    stats['overall_focus_minutes'] = overall_focus
+    stats['task_count'] = len([t for t in tasks if t.get('focus_minutes', 0) > 0])
+    
+    return jsonify(stats)
+
+# ===== Dependency Endpoints =====
+
+@app.route("/tasks/<int:task_id>/dependencies", methods=["POST"])
+def add_task_dependency(task_id):
+    """
+    Add a dependency to a task.
+    Body: { "dependency_id": 5 }
+    """
+    tasks = load_tasks()
+    data = request.json or {}
+    dependency_id = data.get('dependency_id')
+    
+    if not dependency_id:
+        return jsonify({"error": "dependency_id is required"}), 400
+    
+    success, message, updated_task = add_dependency(task_id, dependency_id, tasks)
+    
+    if not success:
+        return jsonify({"error": message}), 400
+    
+    save_tasks(tasks)
+    
+    return jsonify({
+        "message": message,
+        "task": updated_task,
+        "dependencies": updated_task.get('depends_on', [])
+    }), 200
+
+
+@app.route("/tasks/<int:task_id>/dependencies/<int:dependency_id>", methods=["DELETE"])
+def remove_task_dependency(task_id, dependency_id):
+    """
+    Remove a dependency from a task.
+    """
+    tasks = load_tasks()
+    
+    success, message, updated_task = remove_dependency(task_id, dependency_id, tasks)
+    
+    if not success:
+        return jsonify({"error": message}), 400
+    
+    save_tasks(tasks)
+    
+    return jsonify({
+        "message": message,
+        "task": updated_task,
+        "dependencies": updated_task.get('depends_on', [])
+    }), 200
+
+
+@app.route("/tasks/<int:task_id>/blocked", methods=["GET"])
+def check_task_blocked(task_id):
+    """
+    Check if a task is blocked by incomplete dependencies.
+    """
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    
+    blocked, blocking_tasks = is_blocked(task, tasks)
+    
+    blocking_info = [
+        {
+            "id": t['id'],
+            "title": t['title'],
+            "completed": t.get('completed', False)
+        }
+        for t in blocking_tasks
+    ]
+    
+    return jsonify({
+        "task_id": task_id,
+        "is_blocked": blocked,
+        "blocking_count": len(blocking_tasks),
+        "blocking_tasks": blocking_info,
+        "message": f"Blocked by {len(blocking_tasks)} incomplete dependencies" if blocked else "Not blocked"
+    })
+
+
+@app.route("/tasks/<int:task_id>/dependency-chain", methods=["GET"])
+def get_task_dependency_chain(task_id):
+    """
+    Get the full dependency chain for a task (all tasks that must be completed first).
+    """
+    tasks = load_tasks()
+    task = next((t for t in tasks if t['id'] == task_id), None)
+    
+    if not task:
+        return jsonify({"error": "Task not found"}), 404
+    
+    chain_ids = get_dependency_chain(task_id, tasks)
+    
+    chain_tasks = []
+    for tid in chain_ids:
+        t = next((task for task in tasks if task['id'] == tid), None)
+        if t:
+            chain_tasks.append({
+                "id": t['id'],
+                "title": t['title'],
+                "completed": t.get('completed', False)
+            })
+    
+    return jsonify({
+        "task_id": task_id,
+        "dependency_chain": chain_tasks,
+        "total_dependencies": len(chain_tasks)
+    })
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', debug=True)

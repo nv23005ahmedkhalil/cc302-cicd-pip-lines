@@ -363,7 +363,7 @@ All PRs automatically run:
 
 ✅ **main → dev → feature branches → dev → main**
 
-![Branchesscreenshot](screenshots/branch_list.png)
+
 - Created `dev` branch from `main` ✓
 - Created 3 separate feature branches from `dev` ✓
 - Each feature developed in isolation ✓
@@ -381,7 +381,7 @@ All PRs automatically run:
 docker build -t nv23005ahmedkhalil/todo-app:0.1.0 .
 # Successfully built d89c01ed2857
 ```
-![dockerscreanshot](screenshots/dockerhub_tags.png)
+
 ### Images Created
 ```bash
 REPOSITORY                      TAG       IMAGE ID       SIZE

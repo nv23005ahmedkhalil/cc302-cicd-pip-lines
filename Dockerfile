@@ -5,6 +5,7 @@ FROM python:3.9-slim
 LABEL version="1.2" \
       description="To-Do App Dashboard with Flask, Docker, and CRUD Operations" \
       maintainer="Ahmed Khalil" \
+      PORT="5000" \
       release="v1.2"
 
 # Set the working directory inside the container

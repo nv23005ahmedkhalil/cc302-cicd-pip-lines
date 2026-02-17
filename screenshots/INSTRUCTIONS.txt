@@ -1,0 +1,23 @@
+📸 SCREENSHOTS NEEDED FOR SUBMISSION
+
+Please add the following screenshot files to this folder:
+
+1. branch_list.png
+   - Screenshot of terminal showing: git branch -a
+   - OR screenshot of the branch list from SUBMISSION_PROOF.md
+
+2. dockerhub_tags.png
+   - Screenshot from Docker Hub showing your repository tags
+   - URL: https://hub.docker.com/r/nv23005ahmedkhalil/todo_app/tags
+   - OR screenshot of terminal showing: docker images | grep todo
+
+HOW TO ADD FILES:
+- Drag and drop PNG files into this folder
+- OR use the file explorer to copy them here
+- Make sure filenames match exactly (case-sensitive)
+
+After adding screenshots:
+1. Check they display in SUBMISSION_PROOF.md
+2. Run: git add screenshots/*.png
+3. Run: git commit -m "docs: add submission screenshots"
+4. Run: git push origin main

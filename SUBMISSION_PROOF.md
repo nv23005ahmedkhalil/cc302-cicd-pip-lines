@@ -26,15 +26,32 @@ Please replace the placeholders below with your actual screenshots / links befor
 
    ![Branch list screenshot](./screenshots/branch_list.png)
 
+   Or copy/paste the branch list output below (use this if you prefer text instead of an image):
+
+```
+   dev
+   feature/focus-sessions
+   feature/smart-quick-add
+   feature/task-dependencies
+* main
+   remotes/origin/HEAD -> origin/main
+   remotes/origin/dev
+   remotes/origin/feature/ci-cd-pipeline
+   remotes/origin/feature/focus-sessions
+   remotes/origin/feature/smart-quick-add
+   remotes/origin/feature/task-dependencies
+   remotes/origin/main
+```
+
 - **3 Feature PR links (feature → dev)**
 
-   1. Feature PR #1 (Smart Quick Add): [PASTE LINK HERE]
-   2. Feature PR #2 (Focus Sessions): [PASTE LINK HERE]
-   3. Feature PR #3 (Task Dependencies): [PASTE LINK HERE]
+   1. Feature PR #1 (Smart Quick Add): https://github.com/nv23005ahmedkhalil/cc302-cicd-pip-lines/pull/1
+   2. Feature PR #2 (Focus Sessions): https://github.com/nv23005ahmedkhalil/cc302-cicd-pip-lines/pull/2
+   3. Feature PR #3 (Task Dependencies): https://github.com/nv23005ahmedkhalil/cc302-cicd-pip-lines/pull/3
 
 - **Dev → Main PR link (release)**
 
-   Release PR: [PASTE LINK HERE]
+   Release PR: https://github.com/nv23005ahmedkhalil/cc302-cicd-pip-lines/pull/4
 
 - **DockerHub screenshot (tags visible)**
 
@@ -44,13 +61,17 @@ Please replace the placeholders below with your actual screenshots / links befor
 
 - **GitHub Release link**
 
-   Release page: [PASTE LINK HERE]
+   Release page: https://github.com/nv23005ahmedkhalil/cc302-cicd-pip-lines/releases/tag/v0.1.0
 
 - **Short reflection (branching + merging)**
 
    Replace this paragraph with your reflection. Example template you can edit:
 
    > I learned the importance of isolating work in feature branches and merging through an integration branch (`dev`) before releasing to `main`. This workflow reduced merge conflicts, made code review easier, and allowed CI checks to validate each feature before the final release.
+
+   Short reflection (editable):
+
+   > Working with `dev` as the integration branch enforced isolation for each feature, simplified code reviews, and made automated testing reliable. Regularly rebasing or merging `dev` into feature branches reduced conflicts; CI gave confidence to merge, and tagging releases made rollbacks straightforward.
 
 ---
 

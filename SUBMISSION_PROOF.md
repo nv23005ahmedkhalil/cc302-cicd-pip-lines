@@ -14,6 +14,52 @@
 - **Dev Branch:** dev (created from main)
 - **Application:** Flask-based To-Do App with advanced features
 
+---
+
+**Submission Screenshot Placeholders**
+
+Please replace the placeholders below with your actual screenshots / links before exporting this file to PDF for submission.
+
+- **Branch list screenshot / output**
+
+   Insert branch-list image (replace path):
+
+   ![Branch list screenshot](./screenshots/branch_list.png)
+
+- **3 Feature PR links (feature → dev)**
+
+   1. Feature PR #1 (Smart Quick Add): [PASTE LINK HERE]
+   2. Feature PR #2 (Focus Sessions): [PASTE LINK HERE]
+   3. Feature PR #3 (Task Dependencies): [PASTE LINK HERE]
+
+- **Dev → Main PR link (release)**
+
+   Release PR: [PASTE LINK HERE]
+
+- **DockerHub screenshot (tags visible)**
+
+   Insert DockerHub tags image (replace path):
+
+   ![DockerHub tags screenshot](./screenshots/dockerhub_tags.png)
+
+- **GitHub Release link**
+
+   Release page: [PASTE LINK HERE]
+
+- **Short reflection (branching + merging)**
+
+   Replace this paragraph with your reflection. Example template you can edit:
+
+   > I learned the importance of isolating work in feature branches and merging through an integration branch (`dev`) before releasing to `main`. This workflow reduced merge conflicts, made code review easier, and allowed CI checks to validate each feature before the final release.
+
+---
+
+**Instructions:**
+
+- Create a `screenshots` folder at the repository root and place your images there (recommended filenames: `branch_list.png`, `dockerhub_tags.png`).
+- Replace the `[PASTE LINK HERE]` placeholders with the corresponding PR / Release URLs.
+- Once filled, export this Markdown to PDF for submission.
+
 ### Branch Structure
 ```
 main (production)

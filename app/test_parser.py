@@ -7,7 +7,7 @@ test_inputs = [
     "Buy groceries today 2pm !low #personal",
     "Team meeting next monday 10:00 !medium #work",
     "Call mom friday 7pm #family",
-    "No metadata task"
+    "No metadata task",
 ]
 
 for text in test_inputs:

@@ -1,25 +1,22 @@
-# Use the official Python image as the base
-FROM python:3.9-slim
+FROM python:3.11-slim
 
-# Add metadata labels
-LABEL version="1.2" \
-      description="To-Do App Dashboard with Flask, Docker, and CRUD Operations" \
-      maintainer="Ahmed Khalil" \
-      PORT="5000" \
-      release="v1.2"
-
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the requirements.txt and install dependencies
-COPY app/requirements.txt /app/
+# Copy requirements first for better caching
+COPY app/requirements.txt .
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code
-COPY app/ /app/
+# Copy application code
+COPY app/ .
 
-# Expose port 5000 to access the app
+# Expose port
 EXPOSE 5000
 
-# Run the app
+# Set environment variables
+ENV FLASK_APP=app.py
+ENV PYTHONUNBUFFERED=1
+
+# Run the application
 CMD ["python", "app.py"]

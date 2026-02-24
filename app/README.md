@@ -213,3 +213,4 @@ All API responses follow a consistent format:
 - **Server Error**: HTTP status code 500
 
 Errors include an `error` field with a descriptive message.
+# Test change

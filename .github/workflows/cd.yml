@@ -11,10 +11,21 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.VERSION }}
+      docker_username: ${{ steps.docker_user.outputs.USERNAME }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set Docker username
+        id: docker_user
+        run: |
+          if [[ -n "${{ secrets.DOCKERHUB_USERNAME }}" ]]; then
+            echo "USERNAME=${{ secrets.DOCKERHUB_USERNAME }}" >> $GITHUB_OUTPUT
+          else
+            echo "USERNAME=${{ github.repository_owner }}" >> $GITHUB_OUTPUT
+          fi
+          echo "Using Docker username: $(cat $GITHUB_OUTPUT | grep USERNAME | cut -d= -f2)"
 
       - name: Extract version from tag
         id: version
@@ -46,8 +57,8 @@ jobs:
           file: ./Dockerfile
           push: false
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/todo-app:${{ needs.prepare.outputs.version }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/todo-app:latest
+            ${{ needs.prepare.outputs.docker_username }}/todo-app:${{ needs.prepare.outputs.version }}
+            ${{ needs.prepare.outputs.docker_username }}/todo-app:latest
           outputs: type=docker,dest=/tmp/todo-app.tar
 
       - name: Upload Docker image artifact
@@ -80,13 +91,14 @@ jobs:
       - name: Log in to DockerHub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${{ needs.prepare.outputs.docker_username }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+        continue-on-error: true
 
       - name: Push Docker image
         run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/todo-app:${{ needs.prepare.outputs.version }}
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/todo-app:latest
+          docker push ${{ needs.prepare.outputs.docker_username }}/todo-app:${{ needs.prepare.outputs.version }}
+          docker push ${{ needs.prepare.outputs.docker_username }}/todo-app:latest
 
   report:
     name: Deployment Report
@@ -106,4 +118,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Image Details:**" >> $GITHUB_STEP_SUMMARY
           echo "- Version: \`${{ needs.prepare.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Repository: \`${{ secrets.DOCKERHUB_USERNAME }}/todo-app\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Repository: \`${{ needs.prepare.outputs.docker_username }}/todo-app\`" >> $GITHUB_STEP_SUMMARY

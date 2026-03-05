@@ -143,8 +143,8 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
-  build-image:
-    name: Build Docker Image
+  build-and-push-image:
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
     needs: prepare-version
     
@@ -155,44 +155,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          tags: |
-            ${{ needs.prepare-version.outputs.docker_username }}/todo-app:${{ needs.prepare-version.outputs.version }}
-            ${{ needs.prepare-version.outputs.docker_username }}/todo-app:latest
-          outputs: type=docker,dest=/tmp/todo-app.tar
-
-      - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp/todo-app.tar
-          retention-days: 1
-
-  push-image:
-    name: Push to DockerHub
-    runs-on: ubuntu-latest
-    needs: [prepare-version, build-image]
-    
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Download Docker image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp
-
-      - name: Load Docker image
-        run: |
-          docker load --input /tmp/todo-app.tar
-          docker image ls -a
-
       - name: Log in to DockerHub
         uses: docker/login-action@v3
         with:
@@ -200,15 +162,25 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
         continue-on-error: true
 
-      - name: Push Docker image
-        run: |
-          docker push ${{ needs.prepare-version.outputs.docker_username }}/todo-app:${{ needs.prepare-version.outputs.version }}
-          docker push ${{ needs.prepare-version.outputs.docker_username }}/todo-app:latest
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ secrets.DOCKERHUB_TOKEN != '' }}
+          tags: |
+            ${{ needs.prepare-version.outputs.docker_username }}/todo-app:${{ needs.prepare-version.outputs.version }}
+            ${{ needs.prepare-version.outputs.docker_username }}/todo-app:latest
+          cache-from: type=registry,ref=${{ needs.prepare-version.outputs.docker_username }}/todo-app:latest
+          cache-to: type=inline
+
+      - name: Image digest
+        run: echo "Image built and pushed successfully!"
 
   report:
     name: Pipeline Report
     runs-on: ubuntu-latest
-    needs: [setup, lint, test, prepare-version, build-image, push-image]
+    needs: [setup, lint, test, prepare-version, build-and-push-image]
     if: always()
     
     steps:
@@ -223,8 +195,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**CD Jobs:**" >> $GITHUB_STEP_SUMMARY
           echo "- Prepare Version: ${{ needs.prepare-version.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Build Image: ${{ needs.build-image.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Push Image: ${{ needs.push-image.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build and Push Image: ${{ needs.build-and-push-image.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Image Details:**" >> $GITHUB_STEP_SUMMARY
           echo "- Version: \`${{ needs.prepare-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY

@@ -28,12 +28,25 @@
             --shadow-lg: 0 12px 32px rgba(45, 45, 45, 0.15);
         }
 
+        body.dark-mode {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #242424;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --text-light: #808080;
+            --white: #2d2d2d;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .container {
@@ -92,6 +105,26 @@
         }
 
         .btn-secondary:hover {
+            background: var(--bg-secondary);
+        }
+
+        .dark-mode-toggle {
+            background: var(--white);
+            color: var(--accent);
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 20px;
+        }
+
+        .dark-mode-toggle:hover {
+            transform: rotate(20deg) scale(1.1);
             background: var(--bg-secondary);
         }
 
@@ -502,6 +535,9 @@
         <div class="header">
             <h1>✨ TaskFlow Pro</h1>
             <div class="header-actions">
+                <button class="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+                    <span id="darkModeIcon">🌙</span>
+                </button>
                 <button class="btn btn-secondary" onclick="openSettings()">⚙️ Settings</button>
                 <button class="btn btn-primary" onclick="openAddTask()">+ New Task</button>
             </div>
@@ -951,6 +987,36 @@
 
         // Initialize on page load
         window.addEventListener('load', init);
+        window.addEventListener('load', loadDarkModePreference);
+
+        // Dark Mode Toggle
+        function toggleDarkMode() {
+            const body = document.body;
+            const icon = document.getElementById('darkModeIcon');
+            
+            body.classList.toggle('dark-mode');
+            
+            if (body.classList.contains('dark-mode')) {
+                icon.textContent = '☀️';
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                icon.textContent = '🌙';
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        }
+
+        // Load dark mode preference
+        function loadDarkModePreference() {
+            const darkMode = localStorage.getItem('darkMode');
+            const icon = document.getElementById('darkModeIcon');
+            
+            if (darkMode === 'enabled') {
+                document.body.classList.add('dark-mode');
+                icon.textContent = '☀️';
+            } else {
+                icon.textContent = '🌙';
+            }
+        }
     </script>
 </body>
 </html>

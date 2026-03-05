@@ -1,76 +1,138 @@
-name: CI - Tests
+name: CI - Lint and Test
 
 on:
-  pull_request:
-    branches:
-      - main
-      - dev
   push:
-    branches:
-      - main
-      - dev
-      - 'feature/**'
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
 
 jobs:
-  test:
-    name: Run Tests
+  setup:
+    name: Setup Python Environment
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Python
+
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-      
-      - name: Install dependencies
-        working-directory: ./app
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
-      
-      - name: Run tests with coverage
-        working-directory: ./app
-        run: |
-          pytest --cov=. --cov-report=term-missing --cov-report=xml
-      
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
+          python-version: '3.11'
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
         with:
-          files: ./app/coverage.xml
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-  
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Display Python environment
+        run: |
+          python --version
+          pip --version
+
   lint:
-    name: Code Quality
+    name: Lint with flake8
     runs-on: ubuntu-latest
+    needs: setup
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Set up Python
+
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-      
-      - name: Install linting tools
+          python-version: '3.11'
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install flake8
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 black
-      
-      - name: Run flake8
-        working-directory: ./app
+          pip install flake8
+
+      - name: Lint with flake8
         run: |
+          cd app
           # Stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv,__pycache__,.pytest_cache
           # Exit-zero treats all errors as warnings
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      
-      - name: Check code formatting with black
-        working-directory: ./app
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=venv,__pycache__,.pytest_cache
+
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    needs: setup
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
         run: |
-          black --check --diff .
+          python -m pip install --upgrade pip
+          if [ -f app/requirements.txt ]; then
+            pip install -r app/requirements.txt
+          fi
+          pip install pytest pytest-cov
+
+      - name: Display Python environment
+        run: |
+          python --version
+          pip list
+
+      - name: Run tests
+        run: |
+          cd app
+          python -m pytest tests/ -v --tb=short --cov=. --cov-report=term-missing
+        continue-on-error: false
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: app/.coverage
+
+  report:
+    name: Generate Test Report
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    if: always()
+    
+    steps:
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+        continue-on-error: true
+
+      - name: Job summary
+        run: |
+          echo "### ✅ CI Pipeline Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Jobs Status:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Test: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY

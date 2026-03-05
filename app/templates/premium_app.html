@@ -38,6 +38,16 @@
             --sp-2xl: 48px;
         }
 
+        body.light-mode {
+            --bg-dark: #E8F1F5;
+            --bg-secondary: #F5F9FC;
+            --text-primary: #1A242F;
+            --text-secondary: #445566;
+            --text-muted: #677788;
+            --primary-dark: #2D6A5A;
+            --primary: #4A9B7F;
+        }
+
         html {
             scroll-behavior: smooth;
         }
@@ -49,6 +59,7 @@
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         /* Mesh gradient background */
@@ -138,6 +149,27 @@
             background: rgba(212, 165, 116, 0.2);
             border-color: var(--gold);
             box-shadow: 0 4px 16px rgba(212, 165, 116, 0.15);
+        }
+
+        .dark-mode-toggle {
+            background: rgba(212, 165, 116, 0.1);
+            border: 1px solid rgba(212, 165, 116, 0.3);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 20px;
+            color: var(--gold);
+        }
+
+        .dark-mode-toggle:hover {
+            transform: rotate(20deg) scale(1.1);
+            background: rgba(212, 165, 116, 0.2);
+            border-color: var(--gold);
         }
 
         /* Tabs */
@@ -727,6 +759,9 @@
         <div class="header">
             <h1>✦ TASKFLOW</h1>
             <div class="header-actions">
+                <button class="dark-mode-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+                    <span id="themeIcon">🌙</span>
+                </button>
                 <button class="btn btn-secondary" onclick="openSettings()">⚙ Settings</button>
                 <button class="btn btn-primary" onclick="openAddTask()">+ New Task</button>
             </div>
@@ -1124,6 +1159,33 @@
             alert('Settings coming soon 🚀');
         }
 
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.getElementById('themeIcon');
+            
+            body.classList.toggle('light-mode');
+            
+            if (body.classList.contains('light-mode')) {
+                icon.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                icon.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function loadThemePreference() {
+            const theme = localStorage.getItem('theme');
+            const icon = document.getElementById('themeIcon');
+            
+            if (theme === 'light') {
+                document.body.classList.add('light-mode');
+                icon.textContent = '🌙';
+            } else {
+                icon.textContent = '☀️';
+            }
+        }
+
         function openEditModal(id) {
             alert('Edit modal coming soon');
         }
@@ -1135,6 +1197,7 @@
         }
 
         window.addEventListener('load', init);
+        window.addEventListener('load', loadThemePreference);
         
         // Close modal on outside click
         window.addEventListener('click', function(event) {

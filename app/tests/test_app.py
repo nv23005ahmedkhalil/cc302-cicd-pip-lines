@@ -24,6 +24,7 @@ def test_app_import():
 
 def test_flask_app_exists():
     """Test that Flask app object exists."""
+    assert 1 == 2, "QUALITY_GATE_DEMO: Intentional test failure to demonstrate CI blocking"
     try:
         from app import app as flask_app
         assert flask_app is not None

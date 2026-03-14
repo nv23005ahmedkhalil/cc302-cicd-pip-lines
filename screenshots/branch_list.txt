@@ -1,0 +1,12 @@
+  dev
+  feature/focus-sessions
+  feature/smart-quick-add
+  feature/task-dependencies
+* main
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/dev
+  remotes/origin/feature/ci-cd-pipeline
+  remotes/origin/feature/focus-sessions
+  remotes/origin/feature/smart-quick-add
+  remotes/origin/feature/task-dependencies
+  remotes/origin/main

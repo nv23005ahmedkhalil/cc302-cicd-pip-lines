@@ -1,0 +1,30 @@
+* 4b79823 (HEAD -> main) docs: fill PR/release placeholders, add branch-list text and reflection
+* 24a80f3 docs: add screenshots README with capture steps
+* 9ee9738 docs: add screenshot placeholders and submission instructions
+* 8f3d38e (origin/main, origin/HEAD) docs: Add comprehensive submission proof document
+*   f5786ad (tag: v0.1.0) Merge pull request #4 from nv23005ahmedkhalil/dev
+|\  
+| *   e1185c0 (origin/dev, dev) Merge pull request #5 from nv23005ahmedkhalil/feature/ci-cd-pipeline
+| |\  
+| | * bfdbe54 (origin/feature/ci-cd-pipeline) feat: Add CI/CD pipeline with GitHub Actions
+| |/  
+| *   d87683d Merge pull request #3 from nv23005ahmedkhalil/feature/task-dependencies
+| |\  
+| | * 4c436e7 (origin/feature/task-dependencies, feature/task-dependencies) feat: Add Task Dependencies with circular detection
+| |/  
+| *   3e381b4 Merge pull request #2 from nv23005ahmedkhalil/feature/focus-sessions
+| |\  
+| | * 983e38e (origin/feature/focus-sessions, feature/focus-sessions) feat: Add Focus Sessions with timer and auto-progress
+| |/  
+| * a9cb727 Merge pull request #1 from nv23005ahmedkhalil/feature/smart-quick-add
+|/| 
+| * f3c0d98 (origin/feature/smart-quick-add, feature/smart-quick-add) feat: Add Smart Quick Add with natural language parser
+|/  
+* 4d90e08 feat: Add premium glassmorphic SaaS design with Emerald & Gold theme
+* 4d2b23d AIAGENT
+* 7168fce Release v1.2: Add archive, bulk add, and export features
+* 9b74e12 Add version label v1.0 to Docker container
+* 3e8cec6 Release v1.0: Add realistic ocean waves and task statistics chart
+* bcb6a3f Add complete To-Do app with dashboard, CRUD operations, and wave animations
+* 9754105 first commit
+* d7d20a1 Initial commit

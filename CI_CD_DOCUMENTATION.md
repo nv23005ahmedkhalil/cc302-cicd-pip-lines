@@ -637,6 +637,14 @@ All images available at: https://hub.docker.com/r/nv23005ahmedkhalil/todo-app/ta
 
 ## Screenshots & Evidence
 
+Below are the screenshots you should include in your submission. I have named them with suggested filenames — replace these with your actual images when preparing the final report.
+
+- **Passing tests:** `tests-passing.png` — screenshot showing all pytest tests green (use after you fix the intentional failure).
+- **Intentional failing run:** `tests-failure.png` — screenshot showing one failing test (use this when you temporarily change an assertion to demonstrate a failing run).
+- **Test file:** `test_crud.py` — include the file content or a link to [tests/test_crud.py](tests/test_crud.py#L1-L200).
+
+When assembling your final submission, place the images in the `screenshots/` folder and reference them in your report where required.
+
 ### 1. Successful CI Workflow
 **URL:** https://github.com/nv23005ahmedkhalil/cc302-cicd-pip-lines/actions/runs/22714193483
 

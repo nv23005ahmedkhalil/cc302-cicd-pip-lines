@@ -443,6 +443,52 @@ def update_task(task_id):
     return jsonify(task)
 
 
+@app.route("/api/tasks/stats", methods=["GET"])
+def get_task_stats():
+    """Return dashboard-friendly task statistics."""
+    tasks = [t for t in load_tasks() if not t.get("archived")]
+
+    def parse_date_value(value):
+        if not value or not isinstance(value, str):
+            return None
+        try:
+            return datetime.strptime(value, "%Y-%m-%d")
+        except ValueError:
+            return None
+
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    last_7 = [today - timedelta(days=i) for i in range(6, -1, -1)]
+
+    completed_tasks = [t for t in tasks if t.get("completed")]
+    overdue_tasks = [
+        t
+        for t in tasks
+        if parse_date_value(t.get("date")) is not None
+        and parse_date_value(t.get("date")) < today
+        and not t.get("completed")
+    ]
+
+    trend = []
+    for day in last_7:
+        day_str = day.strftime("%Y-%m-%d")
+        daily_completed = 0
+        for task in completed_tasks:
+            updated_at = str(task.get("updated_at") or task.get("created_at") or "")
+            if updated_at.startswith(day_str):
+                daily_completed += 1
+
+        trend.append({"date": day_str, "completed": daily_completed})
+
+    return jsonify(
+        {
+            "total_tasks": len(tasks),
+            "completed_tasks": len(completed_tasks),
+            "overdue_tasks": len(overdue_tasks),
+            "completion_trend_last_7_days": trend,
+        }
+    )
+
+
 @app.route("/tasks/<int:task_id>", methods=["DELETE"])
 def delete_task(task_id):
     tasks = load_tasks()

@@ -25,18 +25,79 @@ CORS(app)  # Enable CORS for all routes
 
 # Local file-based storage (JSON)
 TASKS_FILE = "tasks.json"
+app.TASKS_FILE = TASKS_FILE
+
+VALID_PRIORITIES = {"low", "medium", "high"}
+VALID_STATUSES = {"pending", "in_progress", "completed"}
+
+
+def _tasks_file_path():
+    return getattr(app, "TASKS_FILE", TASKS_FILE)
+
+
+def _parse_iso_date(value):
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        return None
+
+
+def _normalize_task(task):
+    """Backfill metadata fields for existing JSON tasks."""
+    created_at = task.get("created_at") or datetime.now().isoformat()
+    task["created_at"] = created_at
+    task["updated_at"] = task.get("updated_at") or created_at
+
+    due_date = task.get("due_date") or task.get("date") or datetime.now().strftime("%Y-%m-%d")
+    task["due_date"] = due_date
+    task["date"] = due_date
+
+    priority = task.get("priority", "medium")
+    task["priority"] = priority if priority in VALID_PRIORITIES else "medium"
+
+    status = task.get("status")
+    if status not in VALID_STATUSES:
+        status = "completed" if task.get("completed") else "pending"
+    task["status"] = status
+    task["completed"] = status == "completed"
+
+    task.setdefault("description", "")
+    task.setdefault("time", "00:00")
+    task.setdefault("tags", [])
+    task.setdefault("focus_minutes", 0)
+    task.setdefault("depends_on", [])
+    task.setdefault("archived", False)
+
+    return task
 
 
 def load_tasks():
-    if os.path.exists(TASKS_FILE):
-        with open(TASKS_FILE, "r") as f:
-            return json.load(f)
+    tasks_path = _tasks_file_path()
+    if os.path.exists(tasks_path):
+        with open(tasks_path, "r") as f:
+            tasks = json.load(f)
+
+        normalized = [_normalize_task(task) for task in tasks]
+        if normalized != tasks:
+            save_tasks(normalized)
+        return normalized
     return []
 
 
 def save_tasks(tasks):
-    with open(TASKS_FILE, "w") as f:
+    with open(_tasks_file_path(), "w") as f:
         json.dump(tasks, f, indent=4)
+
+
+def _parse_date_value(value):
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        return None
 
 
 @app.route("/", methods=["GET"])
@@ -210,6 +271,92 @@ def get_my_day():
 @app.route("/tasks", methods=["GET"])
 def get_tasks():
     tasks = load_tasks()
+    q = (request.args.get("q") or "").strip().lower()
+    if q:
+        tasks = [
+            t
+            for t in tasks
+            if q in f"{t.get('title', '')} {t.get('description', '')}".lower()
+        ]
+
+    status = (request.args.get("status") or "").strip().lower()
+    priority = (request.args.get("priority") or "").strip().lower()
+    tag = (request.args.get("tag") or "").strip().lower()
+    due_from = _parse_date_value(request.args.get("due_from"))
+    due_to = _parse_date_value(request.args.get("due_to"))
+    due_window = (request.args.get("due_window") or "").strip().lower()
+
+    now = datetime.now()
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_end = today + timedelta(days=6)
+
+    if status:
+        if status == "completed":
+            tasks = [t for t in tasks if bool(t.get("completed"))]
+        elif status in {"pending", "in_progress"}:
+            tasks = [t for t in tasks if not bool(t.get("completed"))]
+
+    if priority:
+        tasks = [t for t in tasks if t.get("priority") == priority]
+
+    if tag:
+        tasks = [
+            t
+            for t in tasks
+            if tag in [str(existing_tag).lower() for existing_tag in t.get("tags", [])]
+        ]
+
+    if due_from:
+        tasks = [
+            t
+            for t in tasks
+            if _parse_date_value(t.get("date")) is not None and _parse_date_value(t.get("date")) >= due_from
+        ]
+
+    if due_to:
+        tasks = [
+            t
+            for t in tasks
+            if _parse_date_value(t.get("date")) is not None and _parse_date_value(t.get("date")) <= due_to
+        ]
+
+    if due_window == "overdue":
+        tasks = [
+            t
+            for t in tasks
+            if (
+                _parse_date_value(t.get("date")) is not None
+                and _parse_date_value(t.get("date")) < today
+                and not bool(t.get("completed"))
+            )
+        ]
+    elif due_window == "today":
+        tasks = [t for t in tasks if _parse_date_value(t.get("date")) == today]
+    elif due_window in {"week", "this_week"}:
+        tasks = [
+            t
+            for t in tasks
+            if (
+                _parse_date_value(t.get("date")) is not None
+                and today <= _parse_date_value(t.get("date")) <= week_end
+            )
+        ]
+
+    sort_by = (request.args.get("sort_by") or "").strip().lower()
+    order = (request.args.get("order") or "asc").strip().lower()
+    reverse = order == "desc"
+
+    if sort_by:
+        priority_rank = {"high": 0, "medium": 1, "low": 2}
+
+        if sort_by == "due_date":
+            tasks.sort(key=lambda t: _parse_date_value(t.get("date")) or datetime.max, reverse=reverse)
+        elif sort_by == "created_date":
+            tasks.sort(key=lambda t: t.get("created_at", ""), reverse=reverse)
+        elif sort_by == "priority":
+            tasks.sort(key=lambda t: priority_rank.get(t.get("priority", "medium"), 3), reverse=reverse)
+        elif sort_by in {"alphabetical", "title"}:
+            tasks.sort(key=lambda t: t.get("title", "").lower(), reverse=reverse)
     return jsonify(tasks)
 
 
@@ -227,22 +374,38 @@ def create_task():
     data = request.json
     if not data.get("title"):
         return jsonify({"error": "Title is required"}), 400
+
+    priority = data.get("priority", "medium")
+    if priority not in VALID_PRIORITIES:
+        return jsonify({"error": "priority must be one of: low, medium, high"}), 400
+
+    status = data.get("status", "pending")
+    if status not in VALID_STATUSES:
+        return jsonify({"error": "status must be one of: pending, in_progress, completed"}), 400
+
     tasks = load_tasks()
     task_id = max([task["id"] for task in tasks], default=0) + 1
-    today = datetime.now().isoformat().split("T")[0]
+    due_date = data.get("due_date") or data.get("date") or datetime.now().strftime("%Y-%m-%d")
+    if _parse_iso_date(due_date) is None:
+        return jsonify({"error": "due_date must be in YYYY-MM-DD format"}), 400
+
+    now = datetime.now().isoformat()
     new_task = {
         "id": task_id,
         "title": data["title"],
         "description": data.get("description", ""),
-        "date": data.get("date", today),
+        "date": due_date,
+        "due_date": due_date,
         "time": data.get("time", "00:00"),
-        "priority": data.get("priority", "medium"),
+        "priority": priority,
+        "status": status,
         "tags": data.get("tags", []),
         "focus_minutes": 0,
         "depends_on": data.get("depends_on", []),
-        "completed": False,
+        "completed": status == "completed",
         "archived": False,
-        "created_at": datetime.now().isoformat(),
+        "created_at": now,
+        "updated_at": now,
     }
     tasks.append(new_task)
     save_tasks(tasks)
@@ -281,14 +444,17 @@ def quick_add_task():
         "title": parsed["title"],
         "description": "",
         "date": parsed["due_date"],
+        "due_date": parsed["due_date"],
         "time": parsed["time"],
         "priority": parsed["priority"],
+        "status": "pending",
         "tags": parsed["tags"],
         "focus_minutes": 0,
         "depends_on": [],
         "completed": False,
         "archived": False,
         "created_at": datetime.now().isoformat(),
+        "updated_at": datetime.now().isoformat(),
     }
 
     tasks.append(new_task)
@@ -327,7 +493,14 @@ def update_task(task_id):
             )
 
     if "completed" in data:
-        task["completed"] = data["completed"]
+        task["completed"] = bool(data["completed"])
+        task["status"] = "completed" if task["completed"] else "pending"
+
+    if "status" in data:
+        if data["status"] not in VALID_STATUSES:
+            return jsonify({"error": "status must be one of: pending, in_progress, completed"}), 400
+        task["status"] = data["status"]
+        task["completed"] = task["status"] == "completed"
     if "archived" in data:
         task["archived"] = data["archived"]
     if "title" in data:
@@ -335,15 +508,73 @@ def update_task(task_id):
     if "description" in data:
         task["description"] = data["description"]
     if "date" in data:
+        if _parse_iso_date(data["date"]) is None:
+            return jsonify({"error": "date must be in YYYY-MM-DD format"}), 400
         task["date"] = data["date"]
+        task["due_date"] = data["date"]
+    if "due_date" in data:
+        if _parse_iso_date(data["due_date"]) is None:
+            return jsonify({"error": "due_date must be in YYYY-MM-DD format"}), 400
+        task["due_date"] = data["due_date"]
+        task["date"] = data["due_date"]
     if "time" in data:
         task["time"] = data["time"]
     if "priority" in data:
+        if data["priority"] not in VALID_PRIORITIES:
+            return jsonify({"error": "priority must be one of: low, medium, high"}), 400
         task["priority"] = data["priority"]
     if "tags" in data:
         task["tags"] = data["tags"]
+
+    task["updated_at"] = datetime.now().isoformat()
     save_tasks(tasks)
     return jsonify(task)
+
+
+@app.route("/api/tasks/stats", methods=["GET"])
+def get_task_stats():
+    """Return dashboard-friendly task statistics."""
+    tasks = [t for t in load_tasks() if not t.get("archived")]
+
+    def parse_date_value(value):
+        if not value or not isinstance(value, str):
+            return None
+        try:
+            return datetime.strptime(value, "%Y-%m-%d")
+        except ValueError:
+            return None
+
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    last_7 = [today - timedelta(days=i) for i in range(6, -1, -1)]
+
+    completed_tasks = [t for t in tasks if t.get("completed")]
+    overdue_tasks = [
+        t
+        for t in tasks
+        if parse_date_value(t.get("date")) is not None
+        and parse_date_value(t.get("date")) < today
+        and not t.get("completed")
+    ]
+
+    trend = []
+    for day in last_7:
+        day_str = day.strftime("%Y-%m-%d")
+        daily_completed = 0
+        for task in completed_tasks:
+            updated_at = str(task.get("updated_at") or task.get("created_at") or "")
+            if updated_at.startswith(day_str):
+                daily_completed += 1
+
+        trend.append({"date": day_str, "completed": daily_completed})
+
+    return jsonify(
+        {
+            "total_tasks": len(tasks),
+            "completed_tasks": len(completed_tasks),
+            "overdue_tasks": len(overdue_tasks),
+            "completion_trend_last_7_days": trend,
+        }
+    )
 
 
 @app.route("/tasks/<int:task_id>", methods=["DELETE"])

@@ -25,17 +25,69 @@ CORS(app)  # Enable CORS for all routes
 
 # Local file-based storage (JSON)
 TASKS_FILE = "tasks.json"
+app.TASKS_FILE = TASKS_FILE
+
+VALID_PRIORITIES = {"low", "medium", "high"}
+VALID_STATUSES = {"pending", "in_progress", "completed"}
+
+
+def _tasks_file_path():
+    return getattr(app, "TASKS_FILE", TASKS_FILE)
+
+
+def _parse_iso_date(value):
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        return None
+
+
+def _normalize_task(task):
+    """Backfill metadata fields for existing JSON tasks."""
+    created_at = task.get("created_at") or datetime.now().isoformat()
+    task["created_at"] = created_at
+    task["updated_at"] = task.get("updated_at") or created_at
+
+    due_date = task.get("due_date") or task.get("date") or datetime.now().strftime("%Y-%m-%d")
+    task["due_date"] = due_date
+    task["date"] = due_date
+
+    priority = task.get("priority", "medium")
+    task["priority"] = priority if priority in VALID_PRIORITIES else "medium"
+
+    status = task.get("status")
+    if status not in VALID_STATUSES:
+        status = "completed" if task.get("completed") else "pending"
+    task["status"] = status
+    task["completed"] = status == "completed"
+
+    task.setdefault("description", "")
+    task.setdefault("time", "00:00")
+    task.setdefault("tags", [])
+    task.setdefault("focus_minutes", 0)
+    task.setdefault("depends_on", [])
+    task.setdefault("archived", False)
+
+    return task
 
 
 def load_tasks():
-    if os.path.exists(TASKS_FILE):
-        with open(TASKS_FILE, "r") as f:
-            return json.load(f)
+    tasks_path = _tasks_file_path()
+    if os.path.exists(tasks_path):
+        with open(tasks_path, "r") as f:
+            tasks = json.load(f)
+
+        normalized = [_normalize_task(task) for task in tasks]
+        if normalized != tasks:
+            save_tasks(normalized)
+        return normalized
     return []
 
 
 def save_tasks(tasks):
-    with open(TASKS_FILE, "w") as f:
+    with open(_tasks_file_path(), "w") as f:
         json.dump(tasks, f, indent=4)
 
 
@@ -227,22 +279,38 @@ def create_task():
     data = request.json
     if not data.get("title"):
         return jsonify({"error": "Title is required"}), 400
+
+    priority = data.get("priority", "medium")
+    if priority not in VALID_PRIORITIES:
+        return jsonify({"error": "priority must be one of: low, medium, high"}), 400
+
+    status = data.get("status", "pending")
+    if status not in VALID_STATUSES:
+        return jsonify({"error": "status must be one of: pending, in_progress, completed"}), 400
+
     tasks = load_tasks()
     task_id = max([task["id"] for task in tasks], default=0) + 1
-    today = datetime.now().isoformat().split("T")[0]
+    due_date = data.get("due_date") or data.get("date") or datetime.now().strftime("%Y-%m-%d")
+    if _parse_iso_date(due_date) is None:
+        return jsonify({"error": "due_date must be in YYYY-MM-DD format"}), 400
+
+    now = datetime.now().isoformat()
     new_task = {
         "id": task_id,
         "title": data["title"],
         "description": data.get("description", ""),
-        "date": data.get("date", today),
+        "date": due_date,
+        "due_date": due_date,
         "time": data.get("time", "00:00"),
-        "priority": data.get("priority", "medium"),
+        "priority": priority,
+        "status": status,
         "tags": data.get("tags", []),
         "focus_minutes": 0,
         "depends_on": data.get("depends_on", []),
-        "completed": False,
+        "completed": status == "completed",
         "archived": False,
-        "created_at": datetime.now().isoformat(),
+        "created_at": now,
+        "updated_at": now,
     }
     tasks.append(new_task)
     save_tasks(tasks)
@@ -281,14 +349,17 @@ def quick_add_task():
         "title": parsed["title"],
         "description": "",
         "date": parsed["due_date"],
+        "due_date": parsed["due_date"],
         "time": parsed["time"],
         "priority": parsed["priority"],
+        "status": "pending",
         "tags": parsed["tags"],
         "focus_minutes": 0,
         "depends_on": [],
         "completed": False,
         "archived": False,
         "created_at": datetime.now().isoformat(),
+        "updated_at": datetime.now().isoformat(),
     }
 
     tasks.append(new_task)
@@ -327,7 +398,14 @@ def update_task(task_id):
             )
 
     if "completed" in data:
-        task["completed"] = data["completed"]
+        task["completed"] = bool(data["completed"])
+        task["status"] = "completed" if task["completed"] else "pending"
+
+    if "status" in data:
+        if data["status"] not in VALID_STATUSES:
+            return jsonify({"error": "status must be one of: pending, in_progress, completed"}), 400
+        task["status"] = data["status"]
+        task["completed"] = task["status"] == "completed"
     if "archived" in data:
         task["archived"] = data["archived"]
     if "title" in data:
@@ -335,13 +413,25 @@ def update_task(task_id):
     if "description" in data:
         task["description"] = data["description"]
     if "date" in data:
+        if _parse_iso_date(data["date"]) is None:
+            return jsonify({"error": "date must be in YYYY-MM-DD format"}), 400
         task["date"] = data["date"]
+        task["due_date"] = data["date"]
+    if "due_date" in data:
+        if _parse_iso_date(data["due_date"]) is None:
+            return jsonify({"error": "due_date must be in YYYY-MM-DD format"}), 400
+        task["due_date"] = data["due_date"]
+        task["date"] = data["due_date"]
     if "time" in data:
         task["time"] = data["time"]
     if "priority" in data:
+        if data["priority"] not in VALID_PRIORITIES:
+            return jsonify({"error": "priority must be one of: low, medium, high"}), 400
         task["priority"] = data["priority"]
     if "tags" in data:
         task["tags"] = data["tags"]
+
+    task["updated_at"] = datetime.now().isoformat()
     save_tasks(tasks)
     return jsonify(task)
 

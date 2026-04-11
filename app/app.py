@@ -262,6 +262,13 @@ def get_my_day():
 @app.route("/tasks", methods=["GET"])
 def get_tasks():
     tasks = load_tasks()
+    q = (request.args.get("q") or "").strip().lower()
+    if q:
+        tasks = [
+            t
+            for t in tasks
+            if q in f"{t.get('title', '')} {t.get('description', '')}".lower()
+        ]
     return jsonify(tasks)
 
 

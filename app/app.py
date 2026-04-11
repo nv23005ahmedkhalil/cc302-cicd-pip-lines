@@ -91,6 +91,15 @@ def save_tasks(tasks):
         json.dump(tasks, f, indent=4)
 
 
+def _parse_date_value(value):
+    if not value or not isinstance(value, str):
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        return None
+
+
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
@@ -269,6 +278,85 @@ def get_tasks():
             for t in tasks
             if q in f"{t.get('title', '')} {t.get('description', '')}".lower()
         ]
+
+    status = (request.args.get("status") or "").strip().lower()
+    priority = (request.args.get("priority") or "").strip().lower()
+    tag = (request.args.get("tag") or "").strip().lower()
+    due_from = _parse_date_value(request.args.get("due_from"))
+    due_to = _parse_date_value(request.args.get("due_to"))
+    due_window = (request.args.get("due_window") or "").strip().lower()
+
+    now = datetime.now()
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_end = today + timedelta(days=6)
+
+    if status:
+        if status == "completed":
+            tasks = [t for t in tasks if bool(t.get("completed"))]
+        elif status in {"pending", "in_progress"}:
+            tasks = [t for t in tasks if not bool(t.get("completed"))]
+
+    if priority:
+        tasks = [t for t in tasks if t.get("priority") == priority]
+
+    if tag:
+        tasks = [
+            t
+            for t in tasks
+            if tag in [str(existing_tag).lower() for existing_tag in t.get("tags", [])]
+        ]
+
+    if due_from:
+        tasks = [
+            t
+            for t in tasks
+            if _parse_date_value(t.get("date")) is not None and _parse_date_value(t.get("date")) >= due_from
+        ]
+
+    if due_to:
+        tasks = [
+            t
+            for t in tasks
+            if _parse_date_value(t.get("date")) is not None and _parse_date_value(t.get("date")) <= due_to
+        ]
+
+    if due_window == "overdue":
+        tasks = [
+            t
+            for t in tasks
+            if (
+                _parse_date_value(t.get("date")) is not None
+                and _parse_date_value(t.get("date")) < today
+                and not bool(t.get("completed"))
+            )
+        ]
+    elif due_window == "today":
+        tasks = [t for t in tasks if _parse_date_value(t.get("date")) == today]
+    elif due_window in {"week", "this_week"}:
+        tasks = [
+            t
+            for t in tasks
+            if (
+                _parse_date_value(t.get("date")) is not None
+                and today <= _parse_date_value(t.get("date")) <= week_end
+            )
+        ]
+
+    sort_by = (request.args.get("sort_by") or "").strip().lower()
+    order = (request.args.get("order") or "asc").strip().lower()
+    reverse = order == "desc"
+
+    if sort_by:
+        priority_rank = {"high": 0, "medium": 1, "low": 2}
+
+        if sort_by == "due_date":
+            tasks.sort(key=lambda t: _parse_date_value(t.get("date")) or datetime.max, reverse=reverse)
+        elif sort_by == "created_date":
+            tasks.sort(key=lambda t: t.get("created_at", ""), reverse=reverse)
+        elif sort_by == "priority":
+            tasks.sort(key=lambda t: priority_rank.get(t.get("priority", "medium"), 3), reverse=reverse)
+        elif sort_by in {"alphabetical", "title"}:
+            tasks.sort(key=lambda t: t.get("title", "").lower(), reverse=reverse)
     return jsonify(tasks)
 
 

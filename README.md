@@ -8,6 +8,8 @@
 
 A modern, feature-rich Flask-based task management application with advanced CI/CD automation, smart task parsing, focus sessions, and beautiful UI themes.
 
+> ✅ **Quality Gate Verified:** All CI checks pass on merged commits to main and dev.
+
 **🚀 Live Demo:** [http://localhost:5000](http://localhost:5000)  
 **📦 Docker Hub:** [nv23005ahmedkhalil/todo-app](https://hub.docker.com/r/nv23005ahmedkhalil/todo-app)  
 **📖 Documentation:** [CI_CD_DOCUMENTATION.md](CI_CD_DOCUMENTATION.md)
